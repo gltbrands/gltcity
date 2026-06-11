@@ -24,8 +24,9 @@ const nav = [
     { href: '/gifts', label: 'Gifts to Officials', icon: '🎁' },
   ]},
   { group: 'DEVELOPMENT', items: [
+    { href: '/wards', label: 'Ward Map', icon: '🗺' },
     { href: '/permits', label: 'Building Permits', icon: '🔨' },
-    { href: '/zoning', label: 'Zoning & Wards', icon: '🗺' },
+    { href: '/zoning', label: 'Zoning Intelligence', icon: '🏙' },
     { href: '/roadmap', label: 'Developer Roadmap', icon: '🧭' },
   ]},
 ]
