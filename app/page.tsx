@@ -1,65 +1,125 @@
-import Image from "next/image";
+import StatCard from '@/components/ui/StatCard'
+import { formatCurrency, sodaFetch, sodaCount } from '@/lib/chicago-api'
+import type { LobbyingActivity, AnomalyAlert } from '@/lib/types'
+import Link from 'next/link'
 
-export default function Home() {
+async function getStats() {
+  try {
+    const [lobbyists, clients, activities, comp, contrib] = await Promise.all([
+      sodaCount('combinations', 'year=2025'),
+      sodaCount('clients', 'year=2025'),
+      sodaCount('activity'),
+      sodaFetch<{ total: string }>('compensation', { $select: 'sum(compensation_amount) as total', $limit: 1 }),
+      sodaFetch<{ total: string }>('contributions', { $select: 'sum(amount) as total', $limit: 1 }),
+    ])
+    return {
+      lobbyists,
+      clients,
+      activities,
+      totalCompensation: parseFloat((comp[0] as any)?.total ?? '0'),
+      totalContributions: parseFloat((contrib[0] as any)?.total ?? '0'),
+    }
+  } catch { return null }
+}
+
+async function getRecentActivity() {
+  try {
+    return await sodaFetch<LobbyingActivity>('activity', { $limit: 8, $order: 'period_start DESC' })
+  } catch { return [] }
+}
+
+export default async function Dashboard() {
+  const [stats, activity] = await Promise.all([getStats(), getRecentActivity()])
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-8 max-w-7xl">
+      <div>
+        <h1 className="text-3xl font-black tracking-tight">
+          <span style={{ color: 'var(--accent)' }}>GLT</span>
+          <span className="text-white">CITY</span>
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+          Chicago Board of Ethics · Lobbying Intelligence Platform · Data updated daily via SODA API
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <StatCard label="Active Lobbyists (2025)" value={stats?.lobbyists?.toLocaleString() ?? '—'} icon="👤" />
+        <StatCard label="Registered Clients" value={stats?.clients?.toLocaleString() ?? '—'} icon="🏢" />
+        <StatCard label="Activity Records" value={stats?.activities?.toLocaleString() ?? '—'} icon="📋" />
+        <StatCard
+          label="Total Compensation"
+          value={stats ? formatCurrency(stats.totalCompensation) : '—'}
+          accent="var(--success)"
+          icon="💰"
+          sub="All years"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <StatCard
+          label="Political Contributions"
+          value={stats ? formatCurrency(stats.totalContributions) : '—'}
+          accent="var(--warn)"
+          icon="📊"
+          sub="All years"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-base">Recent Lobbying Activity</h2>
+            <Link href="/activity" className="text-xs" style={{ color: 'var(--accent)' }}>View all →</Link>
+          </div>
+          <div className="space-y-2">
+            {activity.map((a, i) => (
+              <div key={i} className="flex items-start gap-3 p-3 rounded-lg"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                <span className={`badge shrink-0 mt-0.5 badge-${(a.action ?? '').toLowerCase().replace(' ', '')}`}>
+                  {a.action === 'Both' ? 'BOTH' : (a.action ?? '').slice(0, 3).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{a.client_name}</p>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                    {a.department} · {a.lobbyist_first_name} {a.lobbyist_last_name}
+                  </p>
+                  <p className="text-xs mt-0.5 line-clamp-1" style={{ color: '#94a3b8' }}>
+                    {a.action_sought}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Quick Access Grid */}
+        <div>
+          <h2 className="font-bold text-base mb-4">Explore the Data</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { href: '/lobbyists', label: 'Lobbyist Registry', icon: '👤', desc: 'Search all registered lobbyists', accent: 'var(--accent)' },
+              { href: '/clients', label: 'Client Directory', icon: '🏢', desc: 'Who hired whom', accent: 'var(--accent2)' },
+              { href: '/contributions', label: 'Contributions', icon: '💰', desc: 'Political $ to officials', accent: 'var(--warn)' },
+              { href: '/gifts', label: 'Gifts to Officials', icon: '🎁', desc: 'Track gift disclosures', accent: 'var(--danger)' },
+              { href: '/anomalies', label: 'Anomaly Alerts', icon: '⚠', desc: 'AI-detected patterns', accent: 'var(--danger)' },
+              { href: '/network', label: 'Network Graph', icon: '⬡', desc: 'Visual relationship map', accent: 'var(--success)' },
+              { href: '/departments', label: 'Departments', icon: '🏗', desc: 'Who lobbies what', accent: 'var(--accent)' },
+              { href: '/roadmap', label: 'Developer Roadmap', icon: '🧭', desc: 'Build in Chicago', accent: 'var(--accent2)' },
+            ].map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="card transition-all hover:scale-[1.02]"
+                style={{ textDecoration: 'none', borderColor: 'var(--border)' }}
+              >
+                <div className="text-xl mb-1">{item.icon}</div>
+                <div className="text-sm font-semibold" style={{ color: item.accent }}>{item.label}</div>
+                <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{item.desc}</div>
+              </Link>
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
-  );
+  )
 }
