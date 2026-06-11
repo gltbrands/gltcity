@@ -18,7 +18,7 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
   if (purpose) where.push(`upper(purpose) like '%${purpose.toUpperCase()}%'`)
 
   const data = await sodaFetch<ExpenditureLarge>('expendituresLarge', {
-    $limit: 500,
+    $limit: 5000,
     $order: 'expenditure_date DESC',
     ...(where.length ? { $where: where.join(' AND ') } : {}),
   })

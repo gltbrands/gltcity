@@ -13,7 +13,7 @@ export default async function EmployersPage({ searchParams }: PageProps) {
   if (q) where.push(`upper(name) like '%${q.replace(/'/g, "''").toUpperCase()}%'`)
 
   const data = await sodaFetch<Employer>('employers', {
-    $limit: 500,
+    $limit: 5000,
     $order: 'name ASC',
     $where: where.join(' AND '),
   })

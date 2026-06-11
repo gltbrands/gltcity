@@ -18,7 +18,7 @@ export default async function GiftsPage({ searchParams }: PageProps) {
   if (department) where.push(`upper(department) like '%${department.toUpperCase()}%'`)
 
   const data = await sodaFetch<Gift>('gifts', {
-    $limit: 500,
+    $limit: 2000,
     $order: 'period_start DESC',
     ...(where.length ? { $where: where.join(' AND ') } : {}),
   })

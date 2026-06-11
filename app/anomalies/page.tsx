@@ -21,10 +21,10 @@ const TYPE_ICONS: Record<string, string> = {
 
 async function buildAlerts(): Promise<AnomalyAlert[]> {
   const [gifts, contributions, activity, expenditures] = await Promise.all([
-    sodaFetch<Gift>('gifts', { $limit: 1000, $order: 'period_start DESC' }),
-    sodaFetch<Contribution>('contributions', { $limit: 2000, $order: 'contribution_date DESC' }),
-    sodaFetch<LobbyingActivity>('activity', { $limit: 2000, $order: 'period_start DESC' }),
-    sodaFetch<ExpenditureLarge>('expendituresLarge', { $limit: 1000, $order: 'expenditure_date DESC' }),
+    sodaFetch<Gift>('gifts', { $limit: 2000, $order: 'period_start DESC' }),
+    sodaFetch<Contribution>('contributions', { $limit: 10000, $order: 'contribution_date DESC' }),
+    sodaFetch<LobbyingActivity>('activity', { $limit: 5000, $order: 'period_start DESC' }),
+    sodaFetch<ExpenditureLarge>('expendituresLarge', { $limit: 5000, $order: 'expenditure_date DESC' }),
   ])
 
   const alerts: AnomalyAlert[] = []

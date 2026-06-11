@@ -16,7 +16,7 @@ export default async function DepartmentsPage({ searchParams }: PageProps) {
     $select: 'department, count(*) as cnt',
     $group: 'department',
     $order: 'cnt DESC',
-    $limit: 100,
+    $limit: 500,
     $where: where.join(' AND '),
   })
 

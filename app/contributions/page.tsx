@@ -18,7 +18,7 @@ export default async function ContributionsPage({ searchParams }: PageProps) {
   if (min) where.push(`amount>=${min}`)
 
   const data = await sodaFetch<Contribution>('contributions', {
-    $limit: 500,
+    $limit: 10000,
     $order: 'contribution_date DESC',
     ...(where.length ? { $where: where.join(' AND ') } : {}),
   })

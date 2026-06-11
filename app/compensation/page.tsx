@@ -17,7 +17,7 @@ export default async function CompensationPage({ searchParams }: PageProps) {
   }
 
   const data = await sodaFetch<Compensation>('compensation', {
-    $limit: 500,
+    $limit: 50000,
     $order: 'period_start DESC',
     ...(where.length ? { $where: where.join(' AND ') } : {}),
   })

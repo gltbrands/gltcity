@@ -1,10 +1,17 @@
 import { sodaFetch } from '@/lib/chicago-api'
-import type { LobbyistCombination } from '@/lib/types'
 import Link from 'next/link'
 import { Suspense } from 'react'
 
 interface PageProps {
   searchParams: Promise<{ q?: string; year?: string }>
+}
+
+interface LobbyistRow {
+  lobbyist_id: string
+  lobbyist_first_name: string
+  lobbyist_last_name: string
+  employer_name: string
+  client_count: string
 }
 
 async function LobbyistGrid({ q, year }: { q?: string; year: string }) {
@@ -16,54 +23,58 @@ async function LobbyistGrid({ q, year }: { q?: string; year: string }) {
     )
   }
 
-  const data = await sodaFetch<LobbyistCombination>('combinations', {
-    $limit: 500,
+  // Group by lobbyist to get one row per person with client count
+  const data = await sodaFetch<LobbyistRow>('combinations', {
+    $select: 'lobbyist_id, lobbyist_first_name, lobbyist_last_name, employer_name, count(distinct client_id) as client_count',
+    $group: 'lobbyist_id, lobbyist_first_name, lobbyist_last_name, employer_name',
     $where: where.join(' AND '),
     $order: 'lobbyist_last_name ASC',
+    $limit: 2000,
   })
 
-  // Deduplicate: one card per lobbyist_id
-  const map = new Map<number, { combo: LobbyistCombination; employers: Set<string>; clients: Set<string> }>()
+  // Merge rows with same lobbyist_id (can have multiple employer rows)
+  const map = new Map<string, { first: LobbyistRow; employers: Set<string>; clientCount: number }>()
   for (const row of data) {
     const ex = map.get(row.lobbyist_id)
-    if (ex) { ex.employers.add(row.employer_name); ex.clients.add(row.client_name) }
-    else map.set(row.lobbyist_id, { combo: row, employers: new Set([row.employer_name]), clients: new Set([row.client_name]) })
+    if (ex) {
+      ex.employers.add(row.employer_name)
+      ex.clientCount = Math.max(ex.clientCount, parseInt(row.client_count, 10))
+    } else {
+      map.set(row.lobbyist_id, {
+        first: row,
+        employers: new Set([row.employer_name]),
+        clientCount: parseInt(row.client_count, 10),
+      })
+    }
   }
 
-  const lobbyists = Array.from(map.values())
+  const lobbyists = Array.from(map.values()).sort((a, b) =>
+    a.first.lobbyist_last_name.localeCompare(b.first.lobbyist_last_name)
+  )
 
   return (
     <>
-      <p className="text-sm" style={{ color: 'var(--muted)' }}>{lobbyists.length} lobbyists found</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
-        {lobbyists.map(({ combo, employers, clients }) => (
+      <p className="text-sm" style={{ color: 'var(--muted)' }}>
+        <span className="font-semibold" style={{ color: 'var(--foreground)' }}>{lobbyists.length}</span> lobbyists registered in {year}
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-3">
+        {lobbyists.map(({ first, employers, clientCount }) => (
           <Link
-            key={combo.lobbyist_id}
-            href={`/lobbyists/${combo.lobbyist_id}`}
+            key={first.lobbyist_id}
+            href={`/lobbyists/${first.lobbyist_id}`}
             className="card hover:scale-[1.01] transition-all block"
             style={{ textDecoration: 'none' }}
           >
             <div className="flex items-start justify-between gap-2">
-              <div>
+              <div className="min-w-0">
                 <p className="font-bold text-sm" style={{ color: 'var(--accent)' }}>
-                  {combo.lobbyist_first_name} {combo.lobbyist_last_name}
+                  {first.lobbyist_first_name} {first.lobbyist_last_name}
                 </p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--muted)' }}>
-                  {Array.from(employers).join(', ')}
+                  {Array.from(employers).join(' · ')}
                 </p>
               </div>
-              <span className="badge badge-low shrink-0">{clients.size} client{clients.size !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {Array.from(clients).slice(0, 3).map(c => (
-                <span key={c} className="text-xs px-2 py-0.5 rounded-full truncate max-w-[160px]"
-                  style={{ background: 'rgba(34,211,238,0.08)', color: 'var(--accent)', border: '1px solid rgba(34,211,238,0.2)' }}>
-                  {c}
-                </span>
-              ))}
-              {clients.size > 3 && (
-                <span className="text-xs" style={{ color: 'var(--muted)' }}>+{clients.size - 3} more</span>
-              )}
+              <span className="badge badge-low shrink-0">{clientCount} client{clientCount !== 1 ? 's' : ''}</span>
             </div>
           </Link>
         ))}
@@ -84,8 +95,8 @@ export default async function LobbyistsPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <div className="flex gap-3 items-center">
-        <form className="flex-1 max-w-md">
+      <div className="flex gap-3 items-center flex-wrap">
+        <form className="flex-1 min-w-52 max-w-md">
           <input
             type="search"
             name="q"
@@ -95,8 +106,8 @@ export default async function LobbyistsPage({ searchParams }: PageProps) {
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
           />
         </form>
-        <div className="flex gap-2">
-          {['2025', '2024', '2023', '2022'].map(yr => (
+        <div className="flex gap-2 flex-wrap">
+          {['2025', '2024', '2023', '2022', '2021', '2020'].map(yr => (
             <Link
               key={yr}
               href={`/lobbyists?year=${yr}${q ? `&q=${q}` : ''}`}
@@ -113,7 +124,12 @@ export default async function LobbyistsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <Suspense fallback={<p style={{ color: 'var(--muted)' }}>Loading lobbyists…</p>}>
+      <Suspense fallback={
+        <div className="flex items-center gap-3" style={{ color: 'var(--muted)' }}>
+          <div className="animate-spin w-4 h-4 border-2 rounded-full" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+          Loading lobbyists…
+        </div>
+      }>
         <LobbyistGrid q={q} year={year} />
       </Suspense>
     </div>
