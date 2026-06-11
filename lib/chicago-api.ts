@@ -42,11 +42,12 @@ export async function sodaFetch<T>(
   }
 
   const appToken = process.env.CHICAGO_APP_TOKEN
-  if (appToken) url.searchParams.set('$$app_token', appToken)
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (appToken) headers['X-App-Token'] = appToken
 
   const res = await fetch(url.toString(), {
     next: { revalidate: 3600 },
-    headers: { Accept: 'application/json' },
+    headers,
   })
 
   if (!res.ok) throw new Error(`SODA ${dataset}: ${res.status} ${res.statusText}`)
@@ -59,9 +60,10 @@ export async function sodaCount(dataset: DatasetKey, where?: string): Promise<nu
   url.searchParams.set('$select', 'count(*) as cnt')
   if (where) url.searchParams.set('$where', where)
   const appToken = process.env.CHICAGO_APP_TOKEN
-  if (appToken) url.searchParams.set('$$app_token', appToken)
+  const hdrs: Record<string, string> = {}
+  if (appToken) hdrs['X-App-Token'] = appToken
 
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 }, headers: hdrs })
   if (!res.ok) return 0
   const data = await res.json() as [{ cnt: string }]
   return parseInt(data[0]?.cnt ?? '0', 10)
