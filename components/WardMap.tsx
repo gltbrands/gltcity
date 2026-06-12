@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import L from 'leaflet'
 import Link from 'next/link'
-import { TOPICS, type TopicKey, type WardIntelResponse, type WardTopicData } from '@/lib/topics'
+import { TOPICS, type TopicKey, type WardIntelResponse, type WardTopicData, type WardDemographics } from '@/lib/topics'
 
 interface Ward {
   ward: number
@@ -24,7 +24,6 @@ interface Ward {
 
 const CHICAGO_CENTER: L.LatLngExpression = [41.8375, -87.6866]
 const DEFAULT_ZOOM = 11
-
 const TOPIC_KEYS = Object.keys(TOPICS) as TopicKey[]
 
 function wardBaseColor(ward: number) {
@@ -48,6 +47,8 @@ function formatDollars(n: number) {
   return `$${n.toLocaleString()}`
 }
 
+type MapMode = 'permits' | 'capture' | null
+
 export default function WardMap({ wards }: { wards: Ward[] }) {
   const mapRef = useRef<L.Map | null>(null)
   const layerRefs = useRef<Map<number, L.GeoJSON>>(new Map())
@@ -57,11 +58,16 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
   const [hovered, setHovered] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [activeTopic, setActiveTopic] = useState<TopicKey | null>(null)
+  const [activeMode, setActiveMode] = useState<MapMode>(null)
   const [wardIntel, setWardIntel] = useState<WardIntelResponse | null>(null)
   const [intelLoading, setIntelLoading] = useState(false)
   const [contributions, setContributions] = useState<{ total: number } | null>(null)
 
   const selectedWard = useMemo(() => wards.find(w => w.ward === selected), [wards, selected])
+
+  // Mutual-exclusion helpers
+  function selectTopic(topic: TopicKey | null) { setActiveTopic(topic); setActiveMode(null) }
+  function selectMode(mode: MapMode) { setActiveMode(prev => prev === mode ? null : mode); setActiveTopic(null) }
 
   // Load ward intel once
   useEffect(() => {
@@ -73,16 +79,23 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
       .finally(() => setIntelLoading(false))
   }, [])
 
-  // Compute max intensity for current topic (for gradient normalization)
+  // ── Intensity maximums ──────────────────────────────────────────────
   const maxTopicTotal = useMemo(() => {
     if (!wardIntel || !activeTopic) return 1
-    return Math.max(
-      1,
-      ...Object.values(wardIntel.wardTopics).map(wt => wt[activeTopic]?.total ?? 0)
-    )
+    return Math.max(1, ...Object.values(wardIntel.wardTopics).map(wt => wt[activeTopic]?.total ?? 0))
   }, [wardIntel, activeTopic])
 
-  // Ward fill style based on mode
+  const maxPermits = useMemo(() => {
+    if (!wardIntel?.wardPermits) return 1
+    return Math.max(1, ...Object.values(wardIntel.wardPermits))
+  }, [wardIntel])
+
+  const maxCapture = useMemo(() => {
+    if (!wardIntel?.overallWard) return 1
+    return Math.max(1, ...Object.values(wardIntel.overallWard).map(w => w.total))
+  }, [wardIntel])
+
+  // ── Ward fill style ─────────────────────────────────────────────────
   const wardStyle = useCallback((ward: number, isSelected: boolean, isHovered: boolean) => {
     if (activeTopic && wardIntel) {
       const intensity = (wardIntel.wardTopics[ward]?.[activeTopic]?.total ?? 0) / maxTopicTotal
@@ -98,13 +111,31 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
         weight: isSelected ? 2.5 : intensity > 0.1 ? 1.5 : 0.8,
       }
     }
+    if (activeMode === 'permits' && wardIntel) {
+      const intensity = (wardIntel.wardPermits?.[ward] ?? 0) / maxPermits
+      return {
+        fillColor: '#f97316',
+        fillOpacity: intensity > 0 ? 0.08 + intensity * 0.72 : 0.04,
+        color: isSelected ? '#ffffff' : intensity > 0.2 ? 'rgba(249,115,22,0.8)' : 'rgba(255,255,255,0.12)',
+        weight: isSelected ? 2.5 : intensity > 0.1 ? 1.5 : 0.8,
+      }
+    }
+    if (activeMode === 'capture' && wardIntel) {
+      const intensity = (wardIntel.overallWard[ward]?.total ?? 0) / maxCapture
+      return {
+        fillColor: '#ef4444',
+        fillOpacity: intensity > 0 ? 0.08 + intensity * 0.72 : 0.04,
+        color: isSelected ? '#ffffff' : intensity > 0.2 ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.12)',
+        weight: isSelected ? 2.5 : intensity > 0.1 ? 1.5 : 0.8,
+      }
+    }
     return {
       fillColor: isSelected ? '#00AEEF' : wardBaseColor(ward),
       fillOpacity: isSelected ? 0.55 : isHovered ? 0.3 : 0.18,
       color: isSelected ? '#00AEEF' : 'rgba(255,255,255,0.25)',
       weight: isSelected ? 2.5 : 1,
     }
-  }, [activeTopic, wardIntel, maxTopicTotal])
+  }, [activeTopic, activeMode, wardIntel, maxTopicTotal, maxPermits, maxCapture])
 
   function centroid(ward: Ward): L.LatLngExpression | null {
     try {
@@ -115,31 +146,23 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
       if (!coords?.length) return null
       const lats = coords.map(c => c[1])
       const lngs = coords.map(c => c[0])
-      return [
-        lats.reduce((a, b) => a + b, 0) / lats.length,
-        lngs.reduce((a, b) => a + b, 0) / lngs.length,
-      ]
+      return [lats.reduce((a, b) => a + b, 0) / lats.length, lngs.reduce((a, b) => a + b, 0) / lngs.length]
     } catch { return null }
   }
 
   // Init map once
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return
-    const map = L.map(containerRef.current, {
-      center: CHICAGO_CENTER,
-      zoom: DEFAULT_ZOOM,
-      zoomControl: true,
-    })
+    const map = L.map(containerRef.current, { center: CHICAGO_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true })
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19,
+      subdomains: 'abcd', maxZoom: 19,
     }).addTo(map)
     mapRef.current = map
     return () => { map.remove(); mapRef.current = null }
   }, [])
 
-  // Rebuild ward layers when wards, selection, hover, or heatmap changes
+  // Rebuild ward layers when anything changes
   useEffect(() => {
     const map = mapRef.current
     if (!map || !wards.length) return
@@ -154,30 +177,41 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
       const topicData = activeTopic && wardIntel
         ? wardIntel.wardTopics[ward.ward]?.[activeTopic]
         : null
-      const intensity = activeTopic && wardIntel
-        ? ((wardIntel.wardTopics[ward.ward]?.[activeTopic]?.total ?? 0) / maxTopicTotal * 100).toFixed(0)
-        : null
 
       const layer = L.geoJSON(ward.geom as GeoJSON.GeoJsonObject, { style })
-
       layer.on('click', () => setSelected(prev => prev === ward.ward ? null : ward.ward))
       layer.on('mouseover', () => setHovered(ward.ward))
       layer.on('mouseout', () => setHovered(null))
 
-      const tooltipContent = topicData
-        ? `<div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:12px">
-            <span style="font-weight:700">Ward ${ward.ward}</span> · ${ward.alderman}<br/>
-            <span style="color:${TOPICS[activeTopic!].color}">${TOPICS[activeTopic!].label}</span>: ${formatDollars(topicData.total)} · ${topicData.count} activities
-          </div>`
-        : `<div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:12px;font-weight:600">
-            Ward ${ward.ward} · ${ward.alderman}
-          </div>`
+      let tooltipContent: string
+      if (topicData && activeTopic) {
+        tooltipContent = `<div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:12px">
+          <span style="font-weight:700">Ward ${ward.ward}</span> · ${ward.alderman}<br/>
+          <span style="color:${TOPICS[activeTopic].color}">${TOPICS[activeTopic].label}</span>: ${formatDollars(topicData.total)} · ${topicData.count} activities
+        </div>`
+      } else if (activeMode === 'permits' && wardIntel?.wardPermits) {
+        const cnt = wardIntel.wardPermits[ward.ward] ?? 0
+        tooltipContent = `<div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:12px">
+          <span style="font-weight:700">Ward ${ward.ward}</span> · ${ward.alderman}<br/>
+          <span style="color:#f97316">🔨 ${cnt.toLocaleString()} permits (2022-present)</span>
+        </div>`
+      } else if (activeMode === 'capture' && wardIntel) {
+        const capture = wardIntel.captureScores.find(s => s.ward === ward.ward)
+        tooltipContent = `<div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:12px">
+          <span style="font-weight:700">Ward ${ward.ward}</span> · ${ward.alderman}<br/>
+          <span style="color:#ef4444">${capture ? `#${capture.rank} most lobbied · ${formatDollars(capture.total)}` : 'No lobby data'}</span>
+        </div>`
+      } else {
+        tooltipContent = `<div style="background:#111827;border:1px solid #1e293b;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:12px;font-weight:600">
+          Ward ${ward.ward} · ${ward.alderman}
+        </div>`
+      }
 
       layer.bindTooltip(tooltipContent, { sticky: true, opacity: 1, className: 'leaflet-tooltip-custom' })
       layer.addTo(map)
       layerRefs.current.set(ward.ward, layer)
     }
-  }, [wards, selected, hovered, wardStyle, activeTopic, wardIntel, maxTopicTotal])
+  }, [wards, selected, hovered, wardStyle, activeTopic, activeMode, wardIntel, maxTopicTotal])
 
   // Fly to selected ward + load contributions
   useEffect(() => {
@@ -205,22 +239,34 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
       String(w.ward).includes(search)
     ), [wards, search])
 
-  // Sorted list for heatmap mode
+  // Sorted lists for heatmap modes
   const heatmapSortedWards = useMemo(() => {
     if (!activeTopic || !wardIntel) return []
     return [...wards]
-      .map(w => ({
-        ...w,
-        topicData: wardIntel.wardTopics[w.ward]?.[activeTopic] ?? null,
-      }))
+      .map(w => ({ ...w, topicData: wardIntel.wardTopics[w.ward]?.[activeTopic] ?? null }))
       .filter(w => w.topicData)
       .sort((a, b) => (b.topicData!.total) - (a.topicData!.total))
   }, [activeTopic, wardIntel, wards])
 
+  const permitSortedWards = useMemo(() => {
+    if (!wardIntel?.wardPermits) return []
+    return [...wards]
+      .filter(w => (wardIntel.wardPermits[w.ward] ?? 0) > 0)
+      .sort((a, b) => (wardIntel.wardPermits[b.ward] ?? 0) - (wardIntel.wardPermits[a.ward] ?? 0))
+  }, [wardIntel, wards])
+
+  const captureSortedWards = useMemo(() => {
+    if (!wardIntel?.captureScores) return []
+    const rankMap = new Map(wardIntel.captureScores.map(s => [s.ward, s]))
+    return [...wards]
+      .filter(w => rankMap.has(w.ward))
+      .sort((a, b) => (rankMap.get(a.ward)?.rank ?? 99) - (rankMap.get(b.ward)?.rank ?? 99))
+      .map(w => ({ ...w, capture: rankMap.get(w.ward)! }))
+  }, [wardIntel, wards])
+
   const topicInfo = activeTopic ? TOPICS[activeTopic] : null
   const topicTotals = activeTopic && wardIntel ? wardIntel.topicTotals[activeTopic] : null
 
-  // Insight sentence for the selected topic
   const insightText = useMemo(() => {
     if (!activeTopic || !topicTotals || !wardIntel) return null
     const topWards = topicTotals.topWards.slice(0, 3)
@@ -230,8 +276,7 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
       return ward ? `Ward ${w} (${ward.alderman.split(' ').pop()})` : `Ward ${w}`
     })
     const total = topicTotals.total
-    const wardsWithActivity = Object.values(wardIntel.wardTopics)
-      .filter(wt => (wt[activeTopic]?.total ?? 0) > 0).length
+    const wardsWithActivity = Object.values(wardIntel.wardTopics).filter(wt => (wt[activeTopic]?.total ?? 0) > 0).length
     return `${topNames.join(', ')} concentrate ${Math.round((wardIntel.wardTopics[topWards[0]]?.[activeTopic]?.total ?? 0) / total * 100)}% of ${topicInfo!.label.toLowerCase()} lobbying. Active in ${wardsWithActivity} of 50 wards.`
   }, [activeTopic, topicTotals, wardIntel, wards, topicInfo])
 
@@ -239,6 +284,21 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
     if (!selected || !activeTopic || !wardIntel) return null
     return wardIntel.wardTopics[selected]?.[activeTopic] ?? null
   }, [selected, activeTopic, wardIntel])
+
+  const selectedDemographics: WardDemographics | null = useMemo(() => {
+    if (!selected || !wardIntel?.wardDemographics) return null
+    return wardIntel.wardDemographics[selected] ?? null
+  }, [selected, wardIntel])
+
+  const selectedCapture = useMemo(() => {
+    if (!selected || !wardIntel?.captureScores) return null
+    return wardIntel.captureScores.find(s => s.ward === selected) ?? null
+  }, [selected, wardIntel])
+
+  const selectedPermits = useMemo(() => {
+    if (!selected || !wardIntel?.wardPermits) return null
+    return wardIntel.wardPermits[selected] ?? null
+  }, [selected, wardIntel])
 
   return (
     <div className="flex h-full" style={{ background: 'var(--background)' }}>
@@ -258,31 +318,57 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
           <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Click ward to select · toggle heatmap by topic</p>
         </div>
 
-        {/* ── Heatmap topic selector ── */}
-        <div className="px-3 pt-2 pb-1 border-b" style={{ borderColor: 'var(--border)' }}>
-          <p className="text-xs font-bold tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>LOBBYING HEATMAP</p>
-          <div className="flex flex-wrap gap-1">
+        {/* ── Heatmap controls ── */}
+        <div className="px-3 pt-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
+          <p className="text-xs font-bold tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>HEATMAP LAYERS</p>
+
+          {/* City data modes */}
+          <div className="flex gap-1 mb-2">
             <button
-              onClick={() => setActiveTopic(null)}
+              onClick={() => { selectTopic(null); setActiveMode(null) }}
               className="px-2 py-0.5 rounded text-xs font-semibold transition-all"
               style={{
-                background: !activeTopic ? 'rgba(0,174,239,0.2)' : 'rgba(255,255,255,0.05)',
-                color: !activeTopic ? 'var(--accent)' : 'var(--muted)',
-                border: `1px solid ${!activeTopic ? 'var(--accent)' : 'transparent'}`,
+                background: !activeTopic && !activeMode ? 'rgba(0,174,239,0.2)' : 'rgba(255,255,255,0.05)',
+                color: !activeTopic && !activeMode ? 'var(--accent)' : 'var(--muted)',
+                border: `1px solid ${!activeTopic && !activeMode ? 'var(--accent)' : 'transparent'}`,
               }}
             >
               Off
             </button>
+            <button
+              onClick={() => selectMode('permits')}
+              className="px-2 py-0.5 rounded text-xs font-semibold transition-all"
+              style={{
+                background: activeMode === 'permits' ? 'rgba(249,115,22,0.2)' : 'rgba(255,255,255,0.05)',
+                color: activeMode === 'permits' ? '#f97316' : 'var(--muted)',
+                border: `1px solid ${activeMode === 'permits' ? '#f97316' : 'transparent'}`,
+              }}
+            >
+              🔨 Build
+            </button>
+            <button
+              onClick={() => selectMode('capture')}
+              className="px-2 py-0.5 rounded text-xs font-semibold transition-all"
+              style={{
+                background: activeMode === 'capture' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)',
+                color: activeMode === 'capture' ? '#ef4444' : 'var(--muted)',
+                border: `1px solid ${activeMode === 'capture' ? '#ef4444' : 'transparent'}`,
+              }}
+            >
+              🎯 Capture
+            </button>
+          </div>
+
+          {/* Lobby topic pills */}
+          <div className="flex flex-wrap gap-1">
             {TOPIC_KEYS.filter(k => k !== 'OTHER' && k !== 'ETHICS').map(topic => (
               <button
                 key={topic}
-                onClick={() => setActiveTopic(prev => prev === topic ? null : topic)}
+                onClick={() => selectTopic(prev => prev === topic ? null : topic)}
                 title={TOPICS[topic].label}
                 className="px-2 py-0.5 rounded text-xs font-semibold transition-all"
                 style={{
-                  background: activeTopic === topic
-                    ? `${TOPICS[topic].color}33`
-                    : 'rgba(255,255,255,0.05)',
+                  background: activeTopic === topic ? `${TOPICS[topic].color}33` : 'rgba(255,255,255,0.05)',
                   color: activeTopic === topic ? TOPICS[topic].color : 'var(--muted)',
                   border: `1px solid ${activeTopic === topic ? TOPICS[topic].color : 'transparent'}`,
                 }}
@@ -319,8 +405,58 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
           </div>
         )}
 
-        {/* Search (shown when heatmap off) */}
-        {!activeTopic && (
+        {/* Build Activity insight block */}
+        {activeMode === 'permits' && wardIntel?.wardPermits && (
+          <div className="px-3 py-2 border-b text-xs" style={{ borderColor: 'var(--border)', background: 'rgba(249,115,22,0.06)' }}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-base">🔨</span>
+              <span className="font-bold" style={{ color: '#f97316' }}>Building Activity</span>
+            </div>
+            <p style={{ color: 'var(--muted)' }}>Permits issued 2022-present, by ward. Darker = more development pressure.</p>
+            {(() => {
+              const totalPermits = Object.values(wardIntel.wardPermits).reduce((s, n) => s + n, 0)
+              const topEntry = permitSortedWards[0]
+              return (
+                <div className="mt-1.5 flex gap-3 flex-wrap">
+                  <span style={{ color: '#f97316' }}>{totalPermits.toLocaleString()} total</span>
+                  {topEntry && <span style={{ color: 'var(--muted)' }}>· Top: Ward {topEntry.ward} ({wardIntel.wardPermits[topEntry.ward]?.toLocaleString()})</span>}
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* Capture Score insight block */}
+        {activeMode === 'capture' && wardIntel?.captureScores && (
+          <div className="px-3 py-2 border-b text-xs" style={{ borderColor: 'var(--border)', background: 'rgba(239,68,68,0.06)' }}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-base">🎯</span>
+              <span className="font-bold" style={{ color: '#ef4444' }}>Alderman Capture Score</span>
+            </div>
+            <p style={{ color: 'var(--muted)' }}>Total lobbyist contributions to each alderman. Darker = more lobby money received.</p>
+            {(() => {
+              const scores = wardIntel.captureScores
+              const total = scores.reduce((s, c) => s + c.total, 0)
+              const top = scores[0]
+              const topWard = wards.find(w => w.ward === top?.ward)
+              const top10pct = Math.round(scores.slice(0, 10).reduce((s, c) => s + c.total, 0) / total * 100)
+              return (
+                <div className="mt-1.5 space-y-0.5">
+                  <div className="flex gap-3 flex-wrap">
+                    <span style={{ color: '#ef4444' }}>{formatDollars(total)} total</span>
+                    <span style={{ color: 'var(--muted)' }}>· {scores.length} aldermen</span>
+                  </div>
+                  {top && <p className="italic leading-relaxed" style={{ color: 'var(--muted)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+                    {topWard?.alderman.split(' ').pop()} (Ward {top.ward}) leads at {formatDollars(top.total)}. Top 10 aldermen receive {top10pct}% of all lobby money.
+                  </p>}
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* Search (shown when no active layer) */}
+        {!activeTopic && !activeMode && (
           <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
             <input
               type="search"
@@ -336,7 +472,7 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
         {/* Ward list */}
         <div className="flex-1 overflow-y-auto">
           {activeTopic && wardIntel ? (
-            // Heatmap mode: sorted by topic intensity
+            // Lobby topic heatmap list
             heatmapSortedWards.map((ward, idx) => {
               const data = ward.topicData!
               const pct = maxTopicTotal > 0 ? data.total / maxTopicTotal : 0
@@ -352,10 +488,7 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
                     borderLeft: selected === ward.ward ? `3px solid ${color}` : '3px solid transparent',
                   }}
                 >
-                  <div
-                    className="shrink-0 w-6 h-6 rounded text-xs flex items-center justify-center font-black"
-                    style={{ background: `${color}22`, color }}
-                  >
+                  <div className="shrink-0 w-6 h-6 rounded text-xs flex items-center justify-center font-black" style={{ background: `${color}22`, color }}>
                     {idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -365,7 +498,6 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
                       </p>
                       <span className="text-xs shrink-0" style={{ color }}>{formatDollars(data.total)}</span>
                     </div>
-                    {/* Intensity bar */}
                     <div className="mt-0.5 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                       <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: color, opacity: 0.7 }} />
                     </div>
@@ -373,8 +505,73 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
                 </button>
               )
             })
+          ) : activeMode === 'permits' && wardIntel ? (
+            // Build Activity list
+            permitSortedWards.map((ward, idx) => {
+              const cnt = wardIntel.wardPermits[ward.ward] ?? 0
+              const pct = maxPermits > 0 ? cnt / maxPermits : 0
+              return (
+                <button
+                  key={ward.ward}
+                  onClick={() => setSelected(prev => prev === ward.ward ? null : ward.ward)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left border-b transition-all"
+                  style={{
+                    borderColor: 'var(--border)',
+                    background: selected === ward.ward ? 'rgba(249,115,22,0.1)' : 'transparent',
+                    borderLeft: selected === ward.ward ? '3px solid #f97316' : '3px solid transparent',
+                  }}
+                >
+                  <div className="shrink-0 w-6 h-6 rounded text-xs flex items-center justify-center font-black" style={{ background: 'rgba(249,115,22,0.15)', color: '#f97316' }}>
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs font-semibold truncate" style={{ color: selected === ward.ward ? '#f97316' : 'var(--foreground)' }}>
+                        W{ward.ward} · {ward.alderman.split(' ').slice(-1)[0]}
+                      </p>
+                      <span className="text-xs shrink-0 font-mono" style={{ color: '#f97316' }}>{cnt.toLocaleString()}</span>
+                    </div>
+                    <div className="mt-0.5 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: '#f97316', opacity: 0.7 }} />
+                    </div>
+                  </div>
+                </button>
+              )
+            })
+          ) : activeMode === 'capture' && wardIntel ? (
+            // Capture Score list
+            captureSortedWards.map(ward => {
+              const pct = maxCapture > 0 ? ward.capture.total / maxCapture : 0
+              return (
+                <button
+                  key={ward.ward}
+                  onClick={() => setSelected(prev => prev === ward.ward ? null : ward.ward)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left border-b transition-all"
+                  style={{
+                    borderColor: 'var(--border)',
+                    background: selected === ward.ward ? 'rgba(239,68,68,0.1)' : 'transparent',
+                    borderLeft: selected === ward.ward ? '3px solid #ef4444' : '3px solid transparent',
+                  }}
+                >
+                  <div className="shrink-0 w-6 h-6 rounded text-xs flex items-center justify-center font-black" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+                    #{ward.capture.rank}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs font-semibold truncate" style={{ color: selected === ward.ward ? '#ef4444' : 'var(--foreground)' }}>
+                        W{ward.ward} · {ward.alderman.split(' ').slice(-1)[0]}
+                      </p>
+                      <span className="text-xs shrink-0" style={{ color: '#ef4444' }}>{formatDollars(ward.capture.total)}</span>
+                    </div>
+                    <div className="mt-0.5 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: '#ef4444', opacity: 0.7 }} />
+                    </div>
+                  </div>
+                </button>
+              )
+            })
           ) : (
-            // Normal mode: alderman list
+            // Default alderman list
             filtered.map(ward => (
               <button
                 key={ward.ward}
@@ -410,24 +607,47 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
       {/* ── Map + info panel ── */}
       <div className="flex-1 flex flex-col relative">
 
-        {/* Heatmap intensity legend (floating, top-right) */}
-        {activeTopic && topicInfo && (
+        {/* Legend (floating top-right) */}
+        {(activeTopic || activeMode) && (
           <div
             className="absolute top-3 right-3 z-[1000] px-3 py-2 rounded-lg text-xs"
-            style={{ background: 'rgba(15,20,30,0.92)', border: `1px solid ${topicInfo.color}44`, backdropFilter: 'blur(8px)', minWidth: 180 }}
+            style={{
+              background: 'rgba(15,20,30,0.92)',
+              border: `1px solid ${activeTopic ? `${topicInfo!.color}44` : activeMode === 'permits' ? 'rgba(249,115,22,0.4)' : 'rgba(239,68,68,0.4)'}`,
+              backdropFilter: 'blur(8px)',
+              minWidth: 180,
+            }}
           >
-            <p className="font-bold mb-1.5" style={{ color: topicInfo.color }}>{topicInfo.emoji} {topicInfo.label}</p>
+            <p className="font-bold mb-1.5" style={{ color: activeTopic ? topicInfo!.color : activeMode === 'permits' ? '#f97316' : '#ef4444' }}>
+              {activeTopic ? `${topicInfo!.emoji} ${topicInfo!.label}` : activeMode === 'permits' ? '🔨 Building Activity' : '🎯 Alderman Capture'}
+            </p>
             <div className="flex items-center gap-2 mb-1">
-              <div className="h-2 flex-1 rounded-full" style={{ background: `linear-gradient(to right, ${topicInfo.color}18, ${topicInfo.color})` }} />
+              <div className="h-2 flex-1 rounded-full" style={{
+                background: `linear-gradient(to right, ${activeTopic ? topicInfo!.color : activeMode === 'permits' ? '#f97316' : '#ef4444'}18, ${activeTopic ? topicInfo!.color : activeMode === 'permits' ? '#f97316' : '#ef4444'})`
+              }} />
             </div>
             <div className="flex justify-between" style={{ color: 'var(--muted)' }}>
-              <span>Low</span><span>High intensity</span>
+              <span>Low</span><span>High</span>
             </div>
-            {topicTotals?.topWards?.length ? (
+            {activeTopic && topicTotals?.topWards?.length ? (
               <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
                 <p style={{ color: 'var(--muted)' }}>Top wards:</p>
-                <p className="mt-0.5 font-semibold" style={{ color: topicInfo.color }}>
+                <p className="mt-0.5 font-semibold" style={{ color: topicInfo!.color }}>
                   {topicTotals.topWards.slice(0, 5).join(', ')}
+                </p>
+              </div>
+            ) : activeMode === 'permits' && permitSortedWards.length > 0 ? (
+              <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <p style={{ color: 'var(--muted)' }}>Top wards:</p>
+                <p className="mt-0.5 font-semibold" style={{ color: '#f97316' }}>
+                  {permitSortedWards.slice(0, 5).map(w => w.ward).join(', ')}
+                </p>
+              </div>
+            ) : activeMode === 'capture' && captureSortedWards.length > 0 ? (
+              <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <p style={{ color: 'var(--muted)' }}>Most captured:</p>
+                <p className="mt-0.5 font-semibold" style={{ color: '#ef4444' }}>
+                  {captureSortedWards.slice(0, 5).map(w => w.ward).join(', ')}
                 </p>
               </div>
             ) : null}
@@ -501,12 +721,52 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
                   </div>
                 </div>
 
-                {/* Topic data for selected ward when heatmap is active */}
-                {selectedTopicData && topicInfo && (
+                {/* Neighborhood context strip — always shown when data available */}
+                {(selectedDemographics || selectedCapture || selectedPermits !== null) && (
                   <div
-                    className="mt-2 pt-2 text-xs"
-                    style={{ borderTop: `1px solid ${topicInfo.color}33` }}
+                    className="mt-2 pt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs"
+                    style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
                   >
+                    {selectedDemographics && (
+                      <>
+                        {selectedDemographics.communityAreas.length > 0 && (
+                          <span style={{ color: 'var(--muted)' }}>
+                            <span style={{ color: 'var(--foreground)' }}>🏘 {selectedDemographics.communityAreas.slice(0, 2).join(', ')}</span>
+                          </span>
+                        )}
+                        <span style={{ color: 'var(--muted)' }}>
+                          Hardship <span style={{ color: selectedDemographics.hardshipIndex >= 60 ? '#ef4444' : selectedDemographics.hardshipIndex >= 35 ? '#fbbf24' : '#4ade80', fontWeight: 700 }}>
+                            {selectedDemographics.hardshipIndex}/100
+                          </span>
+                        </span>
+                        <span style={{ color: 'var(--muted)' }}>
+                          Income <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>${selectedDemographics.perCapitaIncome.toLocaleString()}</span>
+                        </span>
+                        <span style={{ color: 'var(--muted)' }}>
+                          Poverty <span style={{ color: selectedDemographics.povertyPct >= 25 ? '#ef4444' : 'var(--foreground)', fontWeight: 600 }}>
+                            {selectedDemographics.povertyPct}%
+                          </span>
+                        </span>
+                      </>
+                    )}
+                    {selectedPermits !== null && (
+                      <span style={{ color: 'var(--muted)' }}>
+                        🔨 <span style={{ color: '#f97316', fontWeight: 600 }}>{selectedPermits.toLocaleString()}</span> permits
+                      </span>
+                    )}
+                    {selectedCapture && (
+                      <span style={{ color: 'var(--muted)' }}>
+                        🎯 <span style={{ color: '#ef4444', fontWeight: 700 }}>#{selectedCapture.rank}</span>
+                        <span> of 50 most lobbied · </span>
+                        <span style={{ color: '#ef4444', fontWeight: 600 }}>{formatDollars(selectedCapture.total)}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Topic data for selected ward when lobby heatmap is active */}
+                {selectedTopicData && topicInfo && (
+                  <div className="mt-2 pt-2 text-xs" style={{ borderTop: `1px solid ${topicInfo.color}33` }}>
                     <div className="flex items-center gap-4 flex-wrap">
                       <span className="font-bold" style={{ color: topicInfo.color }}>
                         {topicInfo.emoji} {topicInfo.label} in Ward {selected}

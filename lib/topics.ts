@@ -131,8 +131,18 @@ export type WardTopicData = {
   topClients: string[]
 }
 
+export type WardDemographics = {
+  hardshipIndex: number
+  perCapitaIncome: number
+  povertyPct: number
+  communityAreas: string[]
+}
+
 export type WardIntelResponse = {
   wardTopics: Record<number, Partial<Record<TopicKey, WardTopicData>>>
   topicTotals: Record<string, { total: number; count: number; topWards: number[] }>
   overallWard: Record<number, { total: number; count: number }>
+  wardPermits: Record<number, number>
+  wardDemographics: Record<number, WardDemographics>
+  captureScores: Array<{ ward: number; total: number; rank: number }>
 }

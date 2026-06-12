@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Contribution, LobbyingActivity } from '@/lib/types'
-import { TOPICS, type TopicKey, type WardIntelResponse } from '@/lib/topics'
+import { TOPICS, type TopicKey, type WardIntelResponse, type WardDemographics } from '@/lib/topics'
 
 // ─────────────────────────────────────────────────────────────
 // Topic classification - maps department + action_sought → category
@@ -60,11 +60,30 @@ function matchContribToWard(recipient: string, aldermanIndex: Map<string, number
 // ─────────────────────────────────────────────────────────────
 // Main computation
 // ─────────────────────────────────────────────────────────────
+type PermitWardCA = { ward: string; community_area: string; cnt: string }
+type CommunityHardship = {
+  ca: string
+  community_area_name: string
+  per_capita_income_: string
+  percent_households_below_poverty: string
+  hardship_index: string
+}
+
 export async function GET() {
-  const [contributions, activities, aldermanIndex] = await Promise.all([
+  const [contributions, activities, aldermanIndex, permitsByWardCA, communityHardshipRaw] = await Promise.all([
     sodaFetch<Contribution>('contributions', { $limit: 25000, $order: 'contribution_date DESC' }),
     sodaFetch<LobbyingActivity>('activity', { $limit: 25000, $order: 'period_start DESC' }),
     buildAldermanIndex(),
+    sodaFetch<PermitWardCA>('permits', {
+      $select: 'ward,community_area,count(*) as cnt',
+      $group: 'ward,community_area',
+      $where: `ward IS NOT NULL AND community_area IS NOT NULL AND issue_date >= '2022-01-01T00:00:00.000'`,
+      $limit: 800,
+    }).catch(() => [] as PermitWardCA[]),
+    fetch('https://data.cityofchicago.org/resource/kn9c-c2s2.json?$limit=77', {
+      next: { revalidate: 86400 },
+      headers: { Accept: 'application/json' },
+    }).then(r => r.json()).catch(() => []) as Promise<CommunityHardship[]>,
   ])
 
   // Build: lobbyist_id → topics they work on (from activity)
@@ -149,5 +168,64 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ wardTopics: serialized, topicTotals, overallWard } satisfies WardIntelResponse)
+  // ── Building Activity: permits grouped by ward ──────────────────────
+  const wardPermits: Record<number, number> = {}
+  const wardCaMap: Record<number, Map<string, number>> = {}
+
+  for (const row of permitsByWardCA) {
+    const ward = parseInt(row.ward, 10)
+    const ca = row.community_area?.trim()
+    const cnt = parseInt(row.cnt, 10)
+    if (!ward || !ca || isNaN(cnt)) continue
+    wardPermits[ward] = (wardPermits[ward] ?? 0) + cnt
+    if (!wardCaMap[ward]) wardCaMap[ward] = new Map()
+    wardCaMap[ward].set(ca, (wardCaMap[ward].get(ca) ?? 0) + cnt)
+  }
+
+  // ── Neighborhood Context: community area demographics per ward ───────
+  const hardshipLookup = new Map<string, { hardshipIndex: number; perCapitaIncome: number; povertyPct: number; name: string }>()
+  for (const ca of communityHardshipRaw) {
+    hardshipLookup.set(ca.ca, {
+      hardshipIndex: parseFloat(ca.hardship_index ?? '0'),
+      perCapitaIncome: parseInt(ca.per_capita_income_ ?? '0', 10),
+      povertyPct: parseFloat(ca.percent_households_below_poverty ?? '0'),
+      name: ca.community_area_name,
+    })
+  }
+
+  const wardDemographics: WardIntelResponse['wardDemographics'] = {}
+  for (const [wardStr, caMap] of Object.entries(wardCaMap)) {
+    const ward = parseInt(wardStr, 10)
+    const sortedCAs = Array.from(caMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3)
+    let totalWeight = 0, wHardship = 0, wIncome = 0, wPoverty = 0
+    const names: string[] = []
+    for (const [caNum, count] of sortedCAs) {
+      const hd = hardshipLookup.get(caNum)
+      if (!hd) continue
+      totalWeight += count
+      wHardship += hd.hardshipIndex * count
+      wIncome += hd.perCapitaIncome * count
+      wPoverty += hd.povertyPct * count
+      names.push(hd.name)
+    }
+    if (totalWeight > 0) {
+      wardDemographics[ward] = {
+        hardshipIndex: Math.round(wHardship / totalWeight),
+        perCapitaIncome: Math.round(wIncome / totalWeight),
+        povertyPct: Math.round((wPoverty / totalWeight) * 10) / 10,
+        communityAreas: names,
+      }
+    }
+  }
+
+  // ── Capture Scores: rank aldermen by total lobby contributions ───────
+  const captureScores = Object.entries(overallWard)
+    .map(([w, data]) => ({ ward: parseInt(w, 10), total: Math.round(data.total), rank: 0 }))
+    .sort((a, b) => b.total - a.total)
+    .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+
+  return NextResponse.json({
+    wardTopics: serialized, topicTotals, overallWard,
+    wardPermits, wardDemographics, captureScores,
+  } satisfies WardIntelResponse)
 }
