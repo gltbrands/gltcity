@@ -71,6 +71,9 @@ export default async function ActivityPage({ searchParams }: PageProps) {
             className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
           />
+          {year && <input type="hidden" name="year" value={year} />}
+          {action && <input type="hidden" name="action" value={action} />}
+          {department && <input type="hidden" name="department" value={department} />}
         </form>
         <div className="flex gap-2 flex-wrap">
           {['', 'Legislative', 'Administrative', 'Both'].map(a => (
@@ -79,7 +82,7 @@ export default async function ActivityPage({ searchParams }: PageProps) {
               href={`/activity?${new URLSearchParams({ ...(q ? { q } : {}), ...(department ? { department } : {}), ...(year ? { year } : {}), ...(a ? { action: a } : {}) }).toString()}`}
               className="px-3 py-1.5 rounded-lg text-sm font-medium"
               style={{
-                background: action === a || (!action && !a) ? 'rgba(34,211,238,0.15)' : 'var(--surface)',
+                background: action === a || (!action && !a) ? 'rgba(0,174,239,0.15)' : 'var(--surface)',
                 color: action === a || (!action && !a) ? 'var(--accent)' : 'var(--muted)',
                 border: '1px solid var(--border)',
               }}
@@ -100,7 +103,7 @@ export default async function ActivityPage({ searchParams }: PageProps) {
           >
             All Years
           </Link>
-          {['2025', '2024', '2023', '2022', '2021'].map(yr => (
+          {['2025', '2024', '2023', '2022'].map(yr => (
             <Link
               key={yr}
               href={`/activity?${new URLSearchParams({ ...(q ? { q } : {}), ...(action ? { action } : {}), ...(department ? { department } : {}), year: yr }).toString()}`}
@@ -129,7 +132,7 @@ export default async function ActivityPage({ searchParams }: PageProps) {
             </Link>
           )}
           <span className="px-3 py-1 text-xs rounded-lg"
-            style={{ background: 'rgba(34,211,238,0.08)', color: 'var(--accent)' }}>
+            style={{ background: 'rgba(0,174,239,0.08)', color: 'var(--accent)' }}>
             Page {pageNum} of {totalPages.toLocaleString()}
           </span>
           {pageNum < totalPages && (
@@ -157,7 +160,7 @@ export default async function ActivityPage({ searchParams }: PageProps) {
                 <p className="text-sm font-semibold">{a.client_name}</p>
                 <p className="text-xs shrink-0" style={{ color: 'var(--muted)' }}>{formatDate(a.period_start)}</p>
               </div>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--accent)' }}>📍 {a.department}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--accent)' }}>{a.department}</p>
               <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>{a.action_sought}</p>
               <Link href={`/lobbyists/${a.lobbyist_id}`}>
                 <p className="text-xs mt-1.5 font-medium" style={{ color: 'var(--accent2)' }}>
@@ -181,7 +184,7 @@ export default async function ActivityPage({ searchParams }: PageProps) {
         {pageNum < totalPages && (
           <Link href={buildUrl(pageNum + 1)}
             className="px-5 py-2 rounded-xl text-sm font-medium"
-            style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--accent)', border: '1px solid rgba(34,211,238,0.2)' }}>
+            style={{ background: 'rgba(0,174,239,0.1)', color: 'var(--accent)', border: '1px solid rgba(0,174,239,0.2)' }}>
             Next Page →
           </Link>
         )}

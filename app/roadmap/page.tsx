@@ -184,7 +184,7 @@ export default async function RoadmapPage() {
             >
               <div className="flex items-start gap-4">
                 <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black"
-                  style={{ background: step.critical ? 'rgba(248,113,113,0.2)' : 'rgba(34,211,238,0.15)', color: step.critical ? 'var(--danger)' : 'var(--accent)' }}>
+                  style={{ background: step.critical ? 'rgba(248,113,113,0.2)' : 'rgba(0,174,239,0.15)', color: step.critical ? 'var(--danger)' : 'var(--accent)' }}>
                   {step.step}
                 </div>
                 <div className="flex-1">
@@ -204,9 +204,9 @@ export default async function RoadmapPage() {
                     ))}
                   </ul>
                   {step.lobbyNote && (
-                    <div className="mt-3 p-3 rounded-lg" style={{ background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.15)' }}>
+                    <div className="mt-3 p-3 rounded-lg" style={{ background: 'rgba(0,174,239,0.06)', border: '1px solid rgba(0,174,239,0.15)' }}>
                       <p className="text-xs" style={{ color: 'var(--accent)' }}>
-                        🔍 <strong>GLTCity Intelligence:</strong> {step.lobbyNote}
+                        🔍 <strong>WARDBOSS:</strong> {step.lobbyNote}
                       </p>
                     </div>
                   )}

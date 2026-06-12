@@ -1,3 +1,4 @@
+export const revalidate = 3600
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Gift, Contribution, LobbyingActivity, ExpenditureLarge, AnomalyAlert } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/chicago-api'
@@ -173,7 +174,7 @@ export default async function AnomaliesPage() {
             <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>{alert.description}</p>
             <div className="flex flex-wrap gap-2 mt-2">
               {alert.lobbyist_name && (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--accent)' }}>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,174,239,0.1)', color: 'var(--accent)' }}>
                   👤 {alert.lobbyist_name}
                 </span>
               )}

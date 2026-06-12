@@ -50,7 +50,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                 cursor: onRowClick ? 'pointer' : 'default',
               }}
-              onMouseEnter={e => { if (onRowClick) (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(34,211,238,0.04)' }}
+              onMouseEnter={e => { if (onRowClick) (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(0,174,239,0.04)' }}
               onMouseLeave={e => { if (onRowClick) (e.currentTarget as HTMLTableRowElement).style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}
             >
               {columns.map(col => (

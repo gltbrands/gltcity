@@ -75,7 +75,7 @@ async function LobbyistGrid({ q, year }: { q?: string; year: string }) {
                   {Array.from(employers).join(' · ')}
                 </p>
               </div>
-              <span className="badge badge-low shrink-0">{clientCount} client{clientCount !== 1 ? 's' : ''}</span>
+              <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,174,239,0.1)', color: 'var(--accent)' }}>{clientCount} client{clientCount !== 1 ? 's' : ''}</span>
             </div>
           </Link>
         ))}
@@ -106,6 +106,7 @@ export default async function LobbyistsPage({ searchParams }: PageProps) {
             className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
           />
+          <input type="hidden" name="year" value={year} />
         </form>
         <div className="flex gap-2 flex-wrap">
           {['2025', '2024', '2023', '2022'].map(yr => (

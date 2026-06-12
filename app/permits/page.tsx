@@ -70,7 +70,7 @@ export default function PermitsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-black">🔨 Building Permits</h1>
+        <h1 className="text-2xl font-black">Building Permits</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
           Chicago DOB permit data. Cross-reference applicants with lobbyist clients on the Ward Map.
         </p>

@@ -40,7 +40,14 @@ export default async function LobbyistProfile({ params }: PageProps) {
   } catch (e) { console.error('lobbyist profile fetch error:', e) }
 
   const first = combos[0]
-  if (!first) return <div style={{ color: 'var(--muted)' }}>Lobbyist not found</div>
+  if (!first) return (
+    <div className="card text-center py-16 max-w-md mx-auto mt-12">
+      <p className="text-4xl mb-4">👤</p>
+      <p className="font-bold text-lg mb-1">Lobbyist not found</p>
+      <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>ID #{id} does not match any registered lobbyist.</p>
+      <Link href="/lobbyists" className="text-sm font-medium" style={{ color: 'var(--accent)' }}>← Back to Registry</Link>
+    </div>
+  )
 
   const name = `${first.lobbyist_first_name} ${first.lobbyist_last_name}`
   const employers = [...new Set(combos.map(c => c.employer_name))]
