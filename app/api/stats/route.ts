@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { sodaCount, sodaFetch } from '@/lib/chicago-api'
 import type { Compensation, Contribution, ExpenditureLarge } from '@/lib/types'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const [

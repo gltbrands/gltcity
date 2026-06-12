@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch, sodaCount, formatDate } from '@/lib/chicago-api'
 import type { LobbyingActivity } from '@/lib/types'
 import Link from 'next/link'
@@ -19,20 +20,24 @@ export default async function ActivityPage({ searchParams }: PageProps) {
     where.push(`(upper(action_sought) like '%${esc}%' OR upper(department) like '%${esc}%' OR upper(client_name) like '%${esc}%')`)
   }
   if (department) where.push(`upper(department) like '%${department.toUpperCase()}%'`)
-  if (action) where.push(`action='${action}'`)
+  if (action) where.push(`upper(action)='${action.toUpperCase()}'`)
   if (year) where.push(`period_start >= '${year}-01-01' AND period_start <= '${year}-12-31'`)
 
   const whereStr = where.length ? where.join(' AND ') : undefined
 
-  const [data, total] = await Promise.all([
-    sodaFetch<LobbyingActivity>('activity', {
-      $limit: PAGE_SIZE,
-      $offset: offset,
-      $order: 'period_start DESC',
-      ...(whereStr ? { $where: whereStr } : {}),
-    }),
-    sodaCount('activity', whereStr),
-  ])
+  let data: LobbyingActivity[] = []
+  let total = 0
+  try {
+    ;[data, total] = await Promise.all([
+      sodaFetch<LobbyingActivity>('activity', {
+        $limit: PAGE_SIZE,
+        $offset: offset,
+        $order: 'period_start DESC',
+        ...(whereStr ? { $where: whereStr } : {}),
+      }),
+      sodaCount('activity', whereStr),
+    ])
+  } catch (e) { console.error('activity fetch error:', e) }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 

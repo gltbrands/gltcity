@@ -12,6 +12,7 @@ export const DATASETS = {
   expendituresLarge: 'xika-473c',
   expendituresSmall: 'eqdx-4qxd',
   compensation: 'dw2f-w78u',
+  permits:      'ydr8-5enu',
 }
 
 export type DatasetKey = keyof typeof DATASETS
@@ -23,6 +24,7 @@ interface SodaParams {
   $order?: string
   $select?: string
   $q?: string
+  $group?: string
   [key: string]: string | number | undefined
 }
 
@@ -41,29 +43,26 @@ export async function sodaFetch<T>(
     }
   }
 
-  const appToken = process.env.CHICAGO_APP_TOKEN
-  const headers: Record<string, string> = { Accept: 'application/json' }
-  if (appToken) headers['X-App-Token'] = appToken
-
   const res = await fetch(url.toString(), {
     next: { revalidate: 3600 },
-    headers,
+    headers: { Accept: 'application/json' },
   })
 
   if (!res.ok) throw new Error(`SODA ${dataset}: ${res.status} ${res.statusText}`)
   return res.json() as Promise<T[]>
 }
 
-export async function sodaCount(dataset: DatasetKey, where?: string): Promise<number> {
+export async function sodaCount(dataset: DatasetKey, whereOrParams?: string | SodaParams): Promise<number> {
   const id = DATASETS[dataset]
   const url = new URL(`${BASE}/${id}.json`)
   url.searchParams.set('$select', 'count(*) as cnt')
-  if (where) url.searchParams.set('$where', where)
-  const appToken = process.env.CHICAGO_APP_TOKEN
-  const hdrs: Record<string, string> = {}
-  if (appToken) hdrs['X-App-Token'] = appToken
-
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 }, headers: hdrs })
+  if (typeof whereOrParams === 'string') {
+    url.searchParams.set('$where', whereOrParams)
+  } else if (whereOrParams) {
+    const { $where } = whereOrParams
+    if ($where) url.searchParams.set('$where', $where)
+  }
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
   if (!res.ok) return 0
   const data = await res.json() as [{ cnt: string }]
   return parseInt(data[0]?.cnt ?? '0', 10)

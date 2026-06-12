@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Gift } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/chicago-api'
@@ -17,11 +18,14 @@ export default async function GiftsPage({ searchParams }: PageProps) {
   }
   if (department) where.push(`upper(department) like '%${department.toUpperCase()}%'`)
 
-  const data = await sodaFetch<Gift>('gifts', {
-    $limit: 2000,
-    $order: 'period_start DESC',
-    ...(where.length ? { $where: where.join(' AND ') } : {}),
-  })
+  let data: Gift[] = []
+  try {
+    data = await sodaFetch<Gift>('gifts', {
+      $limit: 2000,
+      $order: 'period_start DESC',
+      ...(where.length ? { $where: where.join(' AND ') } : {}),
+    })
+  } catch (e) { console.error('gifts fetch error:', e) }
 
   const total = data.reduce((s, r) => s + parseFloat(String(r.value ?? 0)), 0)
 

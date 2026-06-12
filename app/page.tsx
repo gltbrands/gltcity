@@ -34,9 +34,12 @@ export default async function Dashboard() {
   return (
     <div className="space-y-8 max-w-7xl">
       <div>
-        <h1 className="text-3xl font-black tracking-tight">
-          <span style={{ color: 'var(--accent)' }}>GLT</span>
-          <span className="text-white">CITY</span>
+        <h1 className="text-3xl font-black tracking-tight flex items-center gap-0 leading-none">
+          <span className="text-white">W</span>
+          <svg viewBox="0 0 20 22" width="27" height="30" style={{ display: 'inline-block', verticalAlign: 'middle', marginBottom: '3px', marginLeft: '2px', marginRight: '2px' }}>
+            <polygon points="10,1 12.4,7.8 19.5,7.8 14,12 16.2,18.8 10,15 3.8,18.8 6,12 0.5,7.8 7.6,7.8" fill="#CC0000" />
+          </svg>
+          <span className="text-white">RD</span><span style={{ color: '#00AEEF' }}>BOSS</span>
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
           Chicago Board of Ethics · Lobbying Intelligence Platform · Data updated daily via SODA API

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { sodaFetch } from '@/lib/chicago-api'
 
-export const revalidate = 7200
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const data = await sodaFetch<{ department: string; cnt: string }>('activity', {

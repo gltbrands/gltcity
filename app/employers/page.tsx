@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Employer } from '@/lib/types'
 import Link from 'next/link'
@@ -12,11 +13,14 @@ export default async function EmployersPage({ searchParams }: PageProps) {
   const where: string[] = [`year=${year}`]
   if (q) where.push(`upper(name) like '%${q.replace(/'/g, "''").toUpperCase()}%'`)
 
-  const data = await sodaFetch<Employer>('employers', {
-    $limit: 5000,
-    $order: 'name ASC',
-    $where: where.join(' AND '),
-  })
+  let data: Employer[] = []
+  try {
+    data = await sodaFetch<Employer>('employers', {
+      $limit: 5000,
+      $order: 'name ASC',
+      $where: where.join(' AND '),
+    })
+  } catch (e) { console.error('employers fetch error:', e) }
 
   return (
     <div className="space-y-6 max-w-5xl">

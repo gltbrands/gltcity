@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import Link from 'next/link'
 import { Suspense } from 'react'

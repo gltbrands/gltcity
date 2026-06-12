@@ -1,9 +1,8 @@
+export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Contribution, LobbyingActivity } from '@/lib/types'
 import { TOPICS, type TopicKey, type WardIntelResponse } from '@/lib/topics'
-
-export const revalidate = 7200
 
 // ─────────────────────────────────────────────────────────────
 // Topic classification — maps department + action_sought → category
@@ -29,12 +28,9 @@ function classifyTopic(department: string, actionSought: string): TopicKey {
 // Alderman last-name → ward lookup from live ward offices
 // ─────────────────────────────────────────────────────────────
 async function buildAldermanIndex(): Promise<Map<string, number>> {
-  const appToken = process.env.CHICAGO_APP_TOKEN
-  const headers: Record<string, string> = {}
-  if (appToken) headers['X-App-Token'] = appToken
   const res = await fetch(
     'https://data.cityofchicago.org/resource/htai-wnw4.json?$limit=55&$order=ward%20ASC',
-    { next: { revalidate: 86400 }, headers }
+    { next: { revalidate: 86400 }, headers: { Accept: 'application/json' } }
   )
   const data: Array<{ ward: string; alderman: string }> = await res.json()
 

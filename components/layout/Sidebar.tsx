@@ -3,10 +3,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const nav = [
-  { group: 'OVERVIEW', items: [
-    { href: '/', label: 'Dashboard', icon: '◉' },
+  { group: 'INTELLIGENCE', items: [
+    { href: '/intel', label: 'Follow the Money', icon: '🔍' },
+    { href: '/proximity', label: 'Proximity Alerts', icon: '⏱' },
     { href: '/anomalies', label: 'Anomaly Alerts', icon: '⚠' },
     { href: '/network', label: 'Network Graph', icon: '⬡' },
+  ]},
+  { group: 'OVERVIEW', items: [
+    { href: '/', label: 'Dashboard', icon: '◉' },
   ]},
   { group: 'PEOPLE', items: [
     { href: '/lobbyists', label: 'Lobbyists', icon: '👤' },
@@ -26,7 +30,6 @@ const nav = [
   { group: 'DEVELOPMENT', items: [
     { href: '/wards', label: 'Ward Map', icon: '🗺' },
     { href: '/permits', label: 'Building Permits', icon: '🔨' },
-    { href: '/zoning', label: 'Zoning Intelligence', icon: '🏙' },
     { href: '/roadmap', label: 'Developer Roadmap', icon: '🧭' },
   ]},
 ]
@@ -41,11 +44,14 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-4 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-black" style={{ color: 'var(--accent)' }}>GLT</span>
-          <span className="text-xl font-black text-white">CITY</span>
+        <div className="flex items-center gap-0 leading-none">
+          <span className="text-xl font-black tracking-tight text-white">W</span>
+          <svg viewBox="0 0 20 22" width="19" height="21" style={{ display: 'inline-block', verticalAlign: 'middle', marginBottom: '1px', marginLeft: '1px', marginRight: '1px' }}>
+            <polygon points="10,1 12.4,7.8 19.5,7.8 14,12 16.2,18.8 10,15 3.8,18.8 6,12 0.5,7.8 7.6,7.8" fill="#CC0000" />
+          </svg>
+          <span className="text-xl font-black tracking-tight text-white">RD</span><span className="text-xl font-black tracking-tight" style={{ color: '#00AEEF' }}>BOSS</span>
         </div>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Chicago Intelligence</p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Chicago Lobbying Intelligence</p>
       </div>
 
       {/* Nav */}
@@ -58,6 +64,7 @@ export default function Sidebar() {
             <ul className="space-y-0.5">
               {items.map(({ href, label, icon }) => {
                 const active = path === href || (href !== '/' && path.startsWith(href))
+                const isIntel = href === '/intel'
                 return (
                   <li key={href}>
                     <Link
@@ -65,8 +72,13 @@ export default function Sidebar() {
                       className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-all"
                       style={{
                         color: active ? 'var(--accent)' : 'var(--foreground)',
-                        background: active ? 'rgba(34,211,238,0.08)' : 'transparent',
+                        background: active
+                          ? 'rgba(0,174,239,0.08)'
+                          : isIntel
+                          ? 'rgba(0,174,239,0.04)'
+                          : 'transparent',
                         borderLeft: active ? '2px solid var(--accent)' : '2px solid transparent',
+                        fontWeight: isIntel ? 700 : undefined,
                       }}
                     >
                       <span className="text-base w-5 shrink-0 text-center">{icon}</span>

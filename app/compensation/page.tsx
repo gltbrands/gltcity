@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Compensation } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/chicago-api'
@@ -16,11 +17,14 @@ export default async function CompensationPage({ searchParams }: PageProps) {
     where.push(`(upper(lobbyist_first_name) like '%${esc}%' OR upper(lobbyist_last_name) like '%${esc}%' OR upper(client_name) like '%${esc}%')`)
   }
 
-  const data = await sodaFetch<Compensation>('compensation', {
-    $limit: 50000,
-    $order: 'period_start DESC',
-    ...(where.length ? { $where: where.join(' AND ') } : {}),
-  })
+  let data: Compensation[] = []
+  try {
+    data = await sodaFetch<Compensation>('compensation', {
+      $limit: 50000,
+      $order: 'period_start DESC',
+      ...(where.length ? { $where: where.join(' AND ') } : {}),
+    })
+  } catch (e) { console.error('compensation fetch error:', e) }
 
   const total = data.reduce((s, r) => s + parseFloat(String(r.compensation_amount ?? 0)), 0)
 

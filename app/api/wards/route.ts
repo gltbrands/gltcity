@@ -1,6 +1,5 @@
+export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
-
-export const revalidate = 86400 // 24h — ward boundaries don't change often
 
 interface RawBoundary {
   ward: string
@@ -29,13 +28,12 @@ interface RawOffice {
 
 export async function GET() {
   const base = 'https://data.cityofchicago.org/resource'
-  const token = process.env.CHICAGO_APP_TOKEN
-  const auth = token ? `?$$app_token=${token}` : ''
+  const headers = { Accept: 'application/json' }
 
   const [boundaries, offices] = await Promise.all([
-    fetch(`${base}/p293-wvbd.json?$limit=55${auth ? '&' + auth.slice(1) : ''}`, { next: { revalidate: 86400 } })
+    fetch(`${base}/p293-wvbd.json?$limit=55`, { next: { revalidate: 86400 }, headers })
       .then(r => r.json() as Promise<RawBoundary[]>),
-    fetch(`${base}/htai-wnw4.json?$limit=55&$order=ward%20ASC${auth ? '&' + auth.slice(1) : ''}`, { next: { revalidate: 3600 } })
+    fetch(`${base}/htai-wnw4.json?$limit=55&$order=ward%20ASC`, { next: { revalidate: 3600 }, headers })
       .then(r => r.json() as Promise<RawOffice[]>),
   ])
 

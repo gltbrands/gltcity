@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Contribution } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/chicago-api'
@@ -17,11 +18,14 @@ export default async function ContributionsPage({ searchParams }: PageProps) {
   }
   if (min) where.push(`amount>=${min}`)
 
-  const data = await sodaFetch<Contribution>('contributions', {
-    $limit: 10000,
-    $order: 'contribution_date DESC',
-    ...(where.length ? { $where: where.join(' AND ') } : {}),
-  })
+  let data: Contribution[] = []
+  try {
+    data = await sodaFetch<Contribution>('contributions', {
+      $limit: 10000,
+      $order: 'contribution_date DESC',
+      ...(where.length ? { $where: where.join(' AND ') } : {}),
+    })
+  } catch (e) { console.error('contributions fetch error:', e) }
 
   const total = data.reduce((s, r) => s + parseFloat(String(r.amount ?? 0)), 0)
 

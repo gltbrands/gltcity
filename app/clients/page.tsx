@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch, sodaCount } from '@/lib/chicago-api'
 import type { Client } from '@/lib/types'
 import Link from 'next/link'
@@ -18,15 +19,19 @@ export default async function ClientsPage({ searchParams }: PageProps) {
   if (q) where.push(`upper(name) like '%${q.replace(/'/g, "''").toUpperCase()}%'`)
   if (state) where.push(`state='${state}'`)
 
-  const [data, total] = await Promise.all([
-    sodaFetch<Client>('clients', {
-      $limit: PAGE_SIZE,
-      $offset: offset,
-      $order: 'name ASC',
-      ...(where.length ? { $where: where.join(' AND ') } : {}),
-    }),
-    sodaCount('clients', where.length ? where.join(' AND ') : undefined),
-  ])
+  let data: Client[] = []
+  let total = 0
+  try {
+    ;[data, total] = await Promise.all([
+      sodaFetch<Client>('clients', {
+        $limit: PAGE_SIZE,
+        $offset: offset,
+        $order: 'name ASC',
+        ...(where.length ? { $where: where.join(' AND ') } : {}),
+      }),
+      sodaCount('clients', where.length ? where.join(' AND ') : undefined),
+    ])
+  } catch (e) { console.error('clients fetch error:', e) }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 

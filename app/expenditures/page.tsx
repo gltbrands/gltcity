@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { ExpenditureLarge } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/chicago-api'
@@ -17,11 +18,14 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
   }
   if (purpose) where.push(`upper(purpose) like '%${purpose.toUpperCase()}%'`)
 
-  const data = await sodaFetch<ExpenditureLarge>('expendituresLarge', {
-    $limit: 5000,
-    $order: 'expenditure_date DESC',
-    ...(where.length ? { $where: where.join(' AND ') } : {}),
-  })
+  let data: ExpenditureLarge[] = []
+  try {
+    data = await sodaFetch<ExpenditureLarge>('expendituresLarge', {
+      $limit: 5000,
+      $order: 'expenditure_date DESC',
+      ...(where.length ? { $where: where.join(' AND ') } : {}),
+    })
+  } catch (e) { console.error('expenditures fetch error:', e) }
 
   const total = data.reduce((s, r) => s + parseFloat(String(r.amount ?? 0)), 0)
   const eventSpend = data.filter(e => /event|fundrais|reception|gala|dinner/i.test(e.purpose ?? '')).reduce((s, r) => s + parseFloat(String(r.amount ?? 0)), 0)

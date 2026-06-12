@@ -107,6 +107,23 @@ export const TOPICS = {
 
 export type TopicKey = keyof typeof TOPICS
 
+export function classifyTopic(department: string, actionSought: string): TopicKey {
+  const t = `${department} ${actionSought}`.toLowerCase()
+  if (/cannabis|marijuana|dispensary|cultivation|infus|cbd/.test(t)) return 'CANNABIS'
+  if (/liquor|alcohol|tavern|\bbar\b|spirit|winery|brew/.test(t)) return 'LIQUOR'
+  if (/tif\b|tax increment|developer agreement|increment financing/.test(t)) return 'TIF'
+  if (/zon|rezone|variance|planned dev|map amend|dpd|planning|land use|zba|zoning board/.test(t)) return 'ZONING'
+  if (/permit|building|demolit|construct|structur|dob\b|inspection|renovation/.test(t)) return 'CONSTRUCTION'
+  if (/contract|procurement|bid\b|rfp\b|vendor|purchase order|supply|award/.test(t)) return 'CONTRACTS'
+  if (/cdot|transportation|transit|bike lane|pedestrian|parking|road|traffic|bus|cta/.test(t)) return 'TRANSIT'
+  if (/health|hospital|clinic|medical|healthcare|cph\b|hhs\b|public health/.test(t)) return 'HEALTHCARE'
+  if (/environment|sustainability|green|climate|water|mwrd|pollution/.test(t)) return 'ENVIRONMENT'
+  if (/housing|affordable|tenant|hud\b|cha\b|rental|residential subsid/.test(t)) return 'HOUSING'
+  if (/finance|tax\b|budget|bond\b|fiscal|revenue|assessment|treasury/.test(t)) return 'FINANCE'
+  if (/ethics|compliance|lobbying|disclosure|conflict/.test(t)) return 'ETHICS'
+  return 'OTHER'
+}
+
 export type WardTopicData = {
   total: number
   count: number

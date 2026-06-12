@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { Gift } from '@/lib/types'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl

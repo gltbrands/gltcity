@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { sodaFetch } from '@/lib/chicago-api'
 import type { LobbyingActivity } from '@/lib/types'
 
@@ -12,19 +13,23 @@ export default async function DepartmentsPage({ searchParams }: PageProps) {
     ? [`upper(department) like '%${q.replace(/'/g, "''").toUpperCase()}%'`]
     : ["department IS NOT NULL AND department != ''"]
 
-  const rawDepts = await sodaFetch<{ department: string; cnt: string }>('activity', {
-    $select: 'department, count(*) as cnt',
-    $group: 'department',
-    $order: 'cnt DESC',
-    $limit: 500,
-    $where: where.join(' AND '),
-  })
-
-  // Top activities per department
-  const topActivity = await sodaFetch<LobbyingActivity>('activity', {
-    $limit: 200,
-    $order: 'period_start DESC',
-  })
+  let rawDepts: { department: string; cnt: string }[] = []
+  let topActivity: LobbyingActivity[] = []
+  try {
+    ;[rawDepts, topActivity] = await Promise.all([
+      sodaFetch<{ department: string; cnt: string }>('activity', {
+        $select: 'department, count(*) as cnt',
+        $group: 'department',
+        $order: 'cnt DESC',
+        $limit: 500,
+        $where: where.join(' AND '),
+      }),
+      sodaFetch<LobbyingActivity>('activity', {
+        $limit: 200,
+        $order: 'period_start DESC',
+      }),
+    ])
+  } catch (e) { console.error('departments fetch error:', e) }
 
   const deptActivity = new Map<string, LobbyingActivity[]>()
   for (const a of topActivity) {
