@@ -364,7 +364,7 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
             {TOPIC_KEYS.filter(k => k !== 'OTHER' && k !== 'ETHICS').map(topic => (
               <button
                 key={topic}
-                onClick={() => selectTopic(prev => prev === topic ? null : topic)}
+                onClick={() => selectTopic(activeTopic === topic ? null : topic)}
                 title={TOPICS[topic].label}
                 className="px-2 py-0.5 rounded text-xs font-semibold transition-all"
                 style={{
