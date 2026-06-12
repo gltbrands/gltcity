@@ -35,7 +35,7 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-black">Expenditures (Large — $250+)</h1>
+        <h1 className="text-2xl font-black">Expenditures ($250+)</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
           Individual expenditures of $250 or more made by registered lobbyists
         </p>

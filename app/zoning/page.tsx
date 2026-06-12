@@ -4,12 +4,12 @@ export default function ZoningPage() {
       <div>
         <h1 className="text-2xl font-black">Zoning & Ward Map</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          Chicago ward boundaries, zoning classes, and geographic lobbying intensity — Phase 2
+          Chicago ward boundaries, zoning classes, and geographic lobbying intensity. Phase 2.
         </p>
       </div>
       <div className="card p-10 text-center">
         <p className="text-4xl mb-4">🗺</p>
-        <p className="font-bold text-lg mb-2">Interactive Map — Coming in Phase 2</p>
+        <p className="font-bold text-lg mb-2">Interactive Map: Coming in Phase 2</p>
         <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--muted)' }}>
           The ward map will overlay lobbying activity intensity on Chicago's 50 wards, show aldermanic voting patterns on development, and allow parcel-level zoning lookups cross-referenced with who's been lobbying each department.
         </p>

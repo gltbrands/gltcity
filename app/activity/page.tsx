@@ -56,7 +56,7 @@ export default async function ActivityPage({ searchParams }: PageProps) {
       <div>
         <h1 className="text-2xl font-black">Lobbying Activity</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          <span className="font-semibold" style={{ color: 'var(--foreground)' }}>{total.toLocaleString()}</span> lobbying actions on record — reported quarterly to the Board of Ethics
+          <span className="font-semibold" style={{ color: 'var(--foreground)' }}>{total.toLocaleString()}</span> lobbying actions on record, reported quarterly to the Board of Ethics
         </p>
       </div>
 

@@ -16,11 +16,11 @@ const PERMIT_TYPES = [
 
 function fmt(n: string | number) {
   const num = typeof n === 'string' ? parseFloat(n) : n
-  if (!num || isNaN(num)) return '—'
+  if (!num || isNaN(num)) return '-'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num)
 }
 function fmtDate(d: string) {
-  if (!d) return '—'
+  if (!d) return '-'
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 function address(p: Permit) {
@@ -72,7 +72,7 @@ export default function PermitsPage() {
       <div>
         <h1 className="text-2xl font-black">🔨 Building Permits</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          Chicago DOB permit data — cross-reference applicants with lobbyist clients on the Ward Map.
+          Chicago DOB permit data. Cross-reference applicants with lobbyist clients on the Ward Map.
         </p>
       </div>
 
@@ -165,7 +165,7 @@ export default function PermitsPage() {
                         <span className="text-xs" style={{ color: 'var(--muted)' }}>{p.zoning_district}</span>
                       )}
                     </div>
-                    <p className="text-sm font-semibold">{address(p) || '—'}</p>
+                    <p className="text-sm font-semibold">{address(p) || '-'}</p>
                     {p.work_description && (
                       <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
                         {p.work_description.slice(0, 180)}{p.work_description.length > 180 ? '…' : ''}

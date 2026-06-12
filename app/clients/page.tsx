@@ -132,8 +132,8 @@ export default async function ClientsPage({ searchParams }: PageProps) {
               <tr key={`${c.client_id}-${c.year}`} className="border-t"
                 style={{ borderColor: 'var(--border)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                 <td className="px-4 py-3 font-medium" style={{ color: 'var(--accent2)' }}>{c.name}</td>
-                <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>{c.city ?? '—'}</td>
-                <td className="px-4 py-3 text-xs">{c.state ?? '—'}</td>
+                <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>{c.city ?? '-'}</td>
+                <td className="px-4 py-3 text-xs">{c.state ?? '-'}</td>
                 <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>{c.year}</td>
                 <td className="px-4 py-3">
                   <Link

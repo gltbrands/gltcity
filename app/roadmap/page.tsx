@@ -21,12 +21,12 @@ const PROCESS_STEPS = [
     who: 'You / Your Attorney',
     tasks: [
       'Pull zoning for your specific parcel (Chicago Zoning Map or ZIMAS)',
-      'Check TIF district status — affects financing, increment capture',
+      'Check TIF district status. Affects financing and increment capture.',
       'Research aldermanic history: Who represents this ward? How do they vote on development?',
       'Pull building permits at nearby addresses to understand approval patterns',
       'Identify any deed restrictions, historic preservation overlays',
     ],
-    lobbyNote: 'This is where lobbyist data becomes your intelligence layer — cross-reference your department targets against who is being lobbied and for what.',
+    lobbyNote: 'Lobbyist data is your research layer. Cross-reference your department targets against who is being lobbied and for what.',
   },
   {
     step: 2,
@@ -35,7 +35,7 @@ const PROCESS_STEPS = [
     who: 'Developer + DPD Staff',
     tasks: [
       'Meet with Chicago Department of Planning & Development (DPD) staff',
-      'Present concept — get informal feedback before filing',
+      'Present concept. Get informal feedback before filing.',
       'Understand what variances or map amendments will be required',
       'Learn the assigned Plan Examiner / Zoning Reviewer',
     ],
@@ -47,7 +47,7 @@ const PROCESS_STEPS = [
     days: '45–180',
     who: 'Developer + Alderman + Community',
     tasks: [
-      'Chicago operates on "aldermanic privilege" — most zoning changes WILL NOT move without aldermanic support',
+      'Chicago operates on "aldermanic privilege". Most zoning changes WILL NOT move without aldermanic support.',
       'Schedule meeting with the alderman of the ward where your project sits',
       'Prepare a community benefit package (affordable units, local hiring, open space)',
       'Engage community organizations, block clubs, and neighborhood associations',
@@ -64,7 +64,7 @@ const PROCESS_STEPS = [
     tasks: [
       'File Zoning Map Amendment (if rezoning required) or Administrative Adjustment',
       'File Planned Development application (for large sites or height bonuses)',
-      'Pay applicable fees — PD applications can run $10k–$50k',
+      'Pay applicable fees. PD applications run $10k–$50k.',
       'Submit site plans, traffic studies, environmental reviews as required',
     ],
     lobbyNote: null,
@@ -76,7 +76,7 @@ const PROCESS_STEPS = [
     who: 'Applicant + Alderman + Committee',
     tasks: [
       'Project assigned to Committee on Zoning, Landmarks & Building Standards',
-      'Public hearing — community can comment for or against',
+      'Public hearing. Community can comment for or against.',
       'Committee vote → Full City Council vote',
       'Typical timeline: 3–9 months for contested projects',
     ],
@@ -93,7 +93,7 @@ const PROCESS_STEPS = [
       'Typical review: 30–90 days for larger projects',
       'Inspections required throughout construction',
     ],
-    lobbyNote: 'The Buildings department appears in lobbying data — primarily around permit timing, inspection schedules, and code variances.',
+    lobbyNote: 'The Buildings department appears in lobbying data, primarily around permit timing, inspection schedules, and code variances.',
   },
   {
     step: 7,
@@ -114,7 +114,7 @@ const KEY_CONTACTS = [
   { agency: 'Dept of Buildings (DOB)', role: 'Permits, Inspections, Occupancy', url: 'https://www.chicago.gov/city/en/depts/bldgs.html' },
   { agency: 'Zoning Board of Appeals (ZBA)', role: 'Variances, Special Uses', url: 'https://www.chicago.gov/city/en/depts/dcd/supp_info/zoning_board_of_appeals.html' },
   { agency: "Mayor's Office", role: 'Large projects, TIF designations, policy', url: null },
-  { agency: 'City Council — Zoning Committee', role: 'Map amendments, PDs over threshold', url: null },
+  { agency: 'City Council / Zoning Committee', role: 'Map amendments, PDs over threshold', url: null },
   { agency: 'CDOT (Transportation)', role: 'Curb cuts, loading zones, traffic impact', url: null },
   { agency: 'Dept of Water Management', role: 'Sewer capacity, water service', url: null },
   { agency: 'Chicago Fire Dept', role: 'Fire code compliance, sprinklers', url: null },
@@ -138,7 +138,7 @@ export default async function RoadmapPage() {
       <div>
         <h1 className="text-2xl font-black">Developer Intelligence Roadmap</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          What it actually takes to build in Chicago — the political map, the process, and who controls what
+          What it actually takes to build in Chicago: the political map, the process, and who controls what
         </p>
       </div>
 
@@ -148,10 +148,10 @@ export default async function RoadmapPage() {
           ⚡ The Chicago Reality
         </h2>
         <p className="text-sm leading-relaxed">
-          Chicago operates on <strong>aldermanic privilege</strong> — a powerful unwritten (and now increasingly written) rule that says the City Council will not approve a zoning change without the support of the ward alderman. This means your alderman is effectively a <em>veto point</em>. Before you spend a dollar on plans, you need political intelligence: Who is the alderman? What is their track record on your project type? Who has lobbied their committee? Who has contributed to their campaign?
+          Chicago runs on <strong>aldermanic privilege</strong>: an unwritten rule that says the City Council will not approve a zoning change without the support of the ward alderman. Your alderman is effectively a <em>veto point</em>. Before you spend a dollar on plans, know the politics: Who is the alderman? What is their track record on your project type? Who has lobbied their committee? Who has contributed to their campaign?
         </p>
         <p className="text-sm leading-relaxed mt-2">
-          This platform connects those dots. The lobbying data, contribution records, and gift disclosures let you see the <em>real</em> political economy around development — not the official process, but the actual flow of influence.
+          The lobbying data, contribution records, and gift disclosures show the actual political economy around development. Not the official process. Who paid whom, and when.
         </p>
       </div>
 
@@ -171,7 +171,7 @@ export default async function RoadmapPage() {
 
       {/* Process steps */}
       <div>
-        <h2 className="font-bold text-lg mb-4">The Approval Process — Step by Step</h2>
+        <h2 className="font-bold text-lg mb-4">The Approval Process, Step by Step</h2>
         <div className="space-y-4">
           {PROCESS_STEPS.map(step => (
             <div
@@ -238,7 +238,7 @@ export default async function RoadmapPage() {
         <div className="card">
           <h2 className="font-bold text-lg mb-1">What's Being Lobbied at Planning & Buildings Right Now</h2>
           <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>
-            Live from Chicago Board of Ethics — most recent filings
+            Live from Chicago Board of Ethics. Most recent filings.
           </p>
           <div className="space-y-2">
             {dpdActivity.map((a, i) => (

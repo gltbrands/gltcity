@@ -463,16 +463,16 @@ export default function WardMap({ wards }: { wards: Ward[] }) {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   <div>
                     <p style={{ color: 'var(--muted)' }}>Office</p>
-                    <p className="mt-0.5">{selectedWard.address || '—'}</p>
+                    <p className="mt-0.5">{selectedWard.address || '-'}</p>
                   </div>
                   <div>
                     <p style={{ color: 'var(--muted)' }}>Phone</p>
-                    <p className="mt-0.5">{selectedWard.phone || '—'}</p>
+                    <p className="mt-0.5">{selectedWard.phone || '-'}</p>
                   </div>
                   <div>
                     <p style={{ color: 'var(--muted)' }}>Email</p>
                     <a href={`mailto:${selectedWard.email}`} className="mt-0.5 block truncate" style={{ color: 'var(--accent)' }}>
-                      {selectedWard.email || '—'}
+                      {selectedWard.email || '-'}
                     </a>
                   </div>
                   <div>

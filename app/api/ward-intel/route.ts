@@ -5,7 +5,7 @@ import type { Contribution, LobbyingActivity } from '@/lib/types'
 import { TOPICS, type TopicKey, type WardIntelResponse } from '@/lib/topics'
 
 // ─────────────────────────────────────────────────────────────
-// Topic classification — maps department + action_sought → category
+// Topic classification - maps department + action_sought → category
 // ─────────────────────────────────────────────────────────────
 function classifyTopic(department: string, actionSought: string): TopicKey {
   const t = `${department} ${actionSought}`.toLowerCase()

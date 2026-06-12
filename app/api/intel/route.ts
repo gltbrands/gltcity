@@ -226,7 +226,7 @@ export async function GET(req: NextRequest) {
         type: 'expenditure',
         date: e.expenditure_date,
         amount: parseFloat(String(e.amount ?? 0)),
-        description: `${e.purpose} — ${e.recipient}`,
+        description: `${e.purpose} - ${e.recipient}`,
         recipient: e.recipient,
         clientName: e.client_name,
         lobbyistId: e.lobbyist_id,

@@ -4,8 +4,8 @@ import 'leaflet/dist/leaflet.css'
 import Sidebar from '@/components/layout/Sidebar'
 
 export const metadata: Metadata = {
-  title: 'GLTCity — Chicago Lobbying Intelligence',
-  description: 'City of Chicago lobbying data — forensic analysis platform',
+  title: 'GLTCity: Chicago Lobbying Intelligence',
+  description: 'City of Chicago lobbying data. Public records platform.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

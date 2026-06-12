@@ -92,7 +92,7 @@ export default async function LobbyistsPage({ searchParams }: PageProps) {
       <div>
         <h1 className="text-2xl font-black">Lobbyist Registry</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          All registered lobbyists — search by name, employer, or client
+          All registered lobbyists. Search by name, employer, or client.
         </p>
       </div>
 

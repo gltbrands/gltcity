@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const year = req.nextUrl.searchParams.get('year') ?? '2025'
     const window = parseInt(req.nextUrl.searchParams.get('window') ?? '90')
 
-    // Use period_start / contribution_date range — not a 'year' field (doesn't exist on these datasets)
+    // Use period_start / contribution_date range - not a 'year' field (doesn't exist on these datasets)
     const yearWhere = `period_start >= '${year}-01-01T00:00:00.000' AND period_start <= '${year}-12-31T23:59:59.999'`
     const contribWhere = `contribution_date >= '${year}-01-01T00:00:00.000' AND contribution_date <= '${year}-12-31T23:59:59.999' AND amount > 250`
 

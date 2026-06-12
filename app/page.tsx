@@ -36,7 +36,7 @@ export default async function Dashboard() {
       <div>
         <h1 className="text-3xl font-black tracking-tight flex items-center gap-0 leading-none">
           <span className="text-white">W</span>
-          <svg viewBox="0 0 20 22" width="27" height="30" style={{ display: 'inline-block', verticalAlign: 'middle', marginBottom: '3px', marginLeft: '2px', marginRight: '2px' }}>
+          <svg viewBox="0 0 20 22" width="27" height="30" style={{ display: 'inline-block', verticalAlign: '-5px', marginLeft: '2px', marginRight: '2px' }}>
             <polygon points="10,1 12.4,7.8 19.5,7.8 14,12 16.2,18.8 10,15 3.8,18.8 6,12 0.5,7.8 7.6,7.8" fill="#CC0000" />
           </svg>
           <span className="text-white">RD</span><span style={{ color: '#00AEEF' }}>BOSS</span>
@@ -48,19 +48,19 @@ export default async function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatCard label="Active Lobbyists (2025)" value={stats?.lobbyists?.toLocaleString() ?? '—'} icon="👤" />
-        <StatCard label="Registered Clients" value={stats?.clients?.toLocaleString() ?? '—'} icon="🏢" />
-        <StatCard label="Activity Records" value={stats?.activities?.toLocaleString() ?? '—'} icon="📋" />
+        <StatCard label="Active Lobbyists (2025)" value={stats?.lobbyists?.toLocaleString() ?? '-'} icon="👤" />
+        <StatCard label="Registered Clients" value={stats?.clients?.toLocaleString() ?? '-'} icon="🏢" />
+        <StatCard label="Activity Records" value={stats?.activities?.toLocaleString() ?? '-'} icon="📋" />
         <StatCard
           label="Total Compensation"
-          value={stats ? formatCurrency(stats.totalCompensation) : '—'}
+          value={stats ? formatCurrency(stats.totalCompensation) : '-'}
           accent="var(--success)"
           icon="💰"
           sub="All years"
         />
         <StatCard
           label="Political Contributions"
-          value={stats ? formatCurrency(stats.totalContributions) : '—'}
+          value={stats ? formatCurrency(stats.totalContributions) : '-'}
           accent="var(--warn)"
           icon="📊"
           sub="All years"

@@ -16,7 +16,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 function fmtDate(d: string) {
-  if (!d) return '—'
+  if (!d) return '-'
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
@@ -62,7 +62,7 @@ export default function IntelPage() {
       <div>
         <h1 className="text-2xl font-black" style={{ color: 'var(--accent)' }}>🔍 Follow the Money</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          Enter any name — lobbyist, developer, client, firm, or alderman — and get the full intelligence chain.
+          Enter any name: lobbyist, developer, client, firm, or alderman. Get the full money trail.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export default function IntelPage() {
                 <div key={s.label} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
                   <p className="text-xs" style={{ color: 'var(--muted)' }}>{s.label}</p>
                   <p className="text-base font-bold mt-0.5" style={{ color: s.value > 0 ? s.color : 'var(--muted)' }}>
-                    {s.value > 0 ? fmt(s.value) : '—'}
+                    {s.value > 0 ? fmt(s.value) : '-'}
                   </p>
                 </div>
               ))}
@@ -200,7 +200,7 @@ export default function IntelPage() {
                   {result.proximityAlerts.filter(a => a.severity === 'critical').length} Critical
                 </span>
                 <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                  proximity alerts — contributions followed by lobbying activity within 30 days
+                  proximity alerts - contributions followed by lobbying activity within 30 days
                 </span>
                 <button onClick={() => setTab('proximity')} className="ml-auto text-xs px-2 py-0.5 rounded"
                   style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
@@ -393,7 +393,7 @@ export default function IntelPage() {
           <p className="text-4xl">🔍</p>
           <p className="font-bold text-lg">Enter any name to start investigating</p>
           <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--muted)' }}>
-            Lobbyists, developers, clients, law firms, aldermen — any name that appears in the Chicago Board of Ethics data will surface their full financial trail.
+            Lobbyists, developers, clients, law firms, aldermen - any name that appears in the Chicago Board of Ethics data will surface their full financial trail.
           </p>
           <div className="flex flex-wrap gap-2 justify-center mt-4">
             {['Thomas Moore', 'Shefsky & Froelich', 'Zoning Capital', 'Commonwealth Edison'].map(name => (

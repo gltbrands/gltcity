@@ -46,7 +46,7 @@ export default async function DepartmentsPage({ searchParams }: PageProps) {
       <div>
         <h1 className="text-2xl font-black">City Departments</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-          Which departments get lobbied most — and on what issues
+          Which departments get lobbied most, and on what issues
         </p>
       </div>
 

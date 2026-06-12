@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     $order: 'lobbyist_last_name ASC',
   })
 
-  // Deduplicate by lobbyist_id — aggregate employer/clients
+  // Deduplicate by lobbyist_id - aggregate employer/clients
   const map = new Map<number, { combo: LobbyistCombination; employers: Set<string>; clients: Set<string> }>()
   for (const row of data) {
     const existing = map.get(row.lobbyist_id)
