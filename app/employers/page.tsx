@@ -31,8 +31,8 @@ export default async function EmployersPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <div className="flex gap-3">
-        <form className="flex-1 max-w-md">
+      <div className="flex gap-3 items-center flex-wrap">
+        <form className="flex-1 min-w-52 max-w-md">
           <input
             type="search"
             name="q"
@@ -42,12 +42,12 @@ export default async function EmployersPage({ searchParams }: PageProps) {
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
           />
         </form>
-        <div className="flex gap-2">
-          {['2025', '2024', '2023'].map(yr => (
+        <div className="flex gap-2 flex-wrap">
+          {['2025', '2024', '2023', '2022'].map(yr => (
             <Link key={yr} href={`/employers?year=${yr}${q ? `&q=${q}` : ''}`}
               className="px-3 py-1.5 rounded-lg text-sm font-medium"
               style={{
-                background: year === yr ? 'rgba(34,211,238,0.15)' : 'var(--surface)',
+                background: year === yr ? 'rgba(0,174,239,0.15)' : 'var(--surface)',
                 color: year === yr ? 'var(--accent)' : 'var(--muted)',
                 border: '1px solid var(--border)',
               }}>
@@ -72,7 +72,7 @@ export default async function EmployersPage({ searchParams }: PageProps) {
             <Link
               href={`/lobbyists?q=${encodeURIComponent(e.name)}`}
               className="inline-block mt-2 text-xs px-2 py-1 rounded-md"
-              style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--accent)' }}
+              style={{ background: 'rgba(0,174,239,0.1)', color: 'var(--accent)' }}
             >
               View lobbyists →
             </Link>

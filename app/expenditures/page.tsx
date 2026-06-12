@@ -5,13 +5,15 @@ import { formatCurrency, formatDate } from '@/lib/chicago-api'
 import Link from 'next/link'
 
 interface PageProps {
-  searchParams: Promise<{ q?: string; purpose?: string }>
+  searchParams: Promise<{ q?: string; purpose?: string; year?: string }>
 }
 
 export default async function ExpendituresPage({ searchParams }: PageProps) {
-  const { q, purpose } = await searchParams
+  const { q, purpose, year = '2025' } = await searchParams
 
-  const where: string[] = []
+  const where: string[] = [
+    `expenditure_date >= '${year}-01-01T00:00:00.000' AND expenditure_date <= '${year}-12-31T23:59:59.999'`,
+  ]
   if (q) {
     const esc = q.replace(/'/g, "''").toUpperCase()
     where.push(`(upper(lobbyist_first_name) like '%${esc}%' OR upper(lobbyist_last_name) like '%${esc}%' OR upper(client_name) like '%${esc}%' OR upper(recipient) like '%${esc}%')`)
@@ -21,9 +23,9 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
   let data: ExpenditureLarge[] = []
   try {
     data = await sodaFetch<ExpenditureLarge>('expendituresLarge', {
-      $limit: 5000,
+      $limit: 1000,
       $order: 'expenditure_date DESC',
-      ...(where.length ? { $where: where.join(' AND ') } : {}),
+      $where: where.join(' AND '),
     })
   } catch (e) { console.error('expenditures fetch error:', e) }
 
@@ -41,7 +43,7 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card col-span-2">
-          <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Total (filtered)</p>
+          <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--muted)' }}>{year} Total</p>
           <p className="text-2xl font-bold mt-1" style={{ color: 'var(--danger)' }}>{formatCurrency(total)}</p>
         </div>
         <div className="card col-span-2">
@@ -51,29 +53,37 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <form className="flex-1 min-w-48">
+      <div className="flex gap-3 items-center flex-wrap">
+        <form className="flex-1 min-w-52 max-w-md">
           <input
-            type="search"
-            name="q"
-            defaultValue={q}
+            type="search" name="q" defaultValue={q}
             placeholder="Search lobbyist, client, or recipient…"
             className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
           />
         </form>
         <div className="flex gap-2 flex-wrap">
-          {[['', 'All'], ['event', 'Events'], ['fundrais', 'Fundraisers'], ['reception', 'Receptions']].map(([val, label]) => (
-            <Link
-              key={val}
-              href={`/expenditures?${q ? `q=${q}&` : ''}${val ? `purpose=${val}` : ''}`}
+          {['2025', '2024', '2023', '2022'].map(yr => (
+            <Link key={yr} href={`/expenditures?year=${yr}${q ? `&q=${q}` : ''}`}
               className="px-3 py-1.5 rounded-lg text-sm font-medium"
               style={{
-                background: purpose === val || (!purpose && !val) ? 'rgba(248,113,113,0.15)' : 'var(--surface)',
-                color: purpose === val || (!purpose && !val) ? 'var(--danger)' : 'var(--muted)',
+                background: year === yr ? 'rgba(0,174,239,0.15)' : 'var(--surface)',
+                color: year === yr ? 'var(--accent)' : 'var(--muted)',
                 border: '1px solid var(--border)',
-              }}
-            >
+              }}>
+              {yr}
+            </Link>
+          ))}
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {[['', 'All'], ['event', 'Events'], ['fundrais', 'Fundraisers'], ['reception', 'Receptions']].map(([val, label]) => (
+            <Link key={val} href={`/expenditures?year=${year}${q ? `&q=${q}` : ''}${val ? `&purpose=${val}` : ''}`}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium"
+              style={{
+                background: (purpose ?? '') === val ? 'rgba(248,113,113,0.15)' : 'var(--surface)',
+                color: (purpose ?? '') === val ? 'var(--danger)' : 'var(--muted)',
+                border: '1px solid var(--border)',
+              }}>
               {label}
             </Link>
           ))}
@@ -102,14 +112,12 @@ export default async function ExpendituresPage({ searchParams }: PageProps) {
                       {e.lobbyist_first_name} {e.lobbyist_last_name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-sm">{e.client_name}</td>
+                  <td className="px-4 py-3">{e.client_name}</td>
                   <td className="px-4 py-3 text-xs">
                     <span style={{ color: isEvent ? 'var(--warn)' : 'var(--foreground)' }}>{e.purpose}</span>
                   </td>
                   <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>{e.recipient}</td>
-                  <td className="px-4 py-3 font-mono text-sm" style={{ color: 'var(--danger)' }}>
-                    {formatCurrency(e.amount)}
-                  </td>
+                  <td className="px-4 py-3 font-mono" style={{ color: 'var(--danger)' }}>{formatCurrency(e.amount)}</td>
                 </tr>
               )
             })}

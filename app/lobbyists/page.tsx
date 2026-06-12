@@ -108,13 +108,13 @@ export default async function LobbyistsPage({ searchParams }: PageProps) {
           />
         </form>
         <div className="flex gap-2 flex-wrap">
-          {['2025', '2024', '2023', '2022', '2021', '2020'].map(yr => (
+          {['2025', '2024', '2023', '2022'].map(yr => (
             <Link
               key={yr}
               href={`/lobbyists?year=${yr}${q ? `&q=${q}` : ''}`}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg text-sm font-medium"
               style={{
-                background: year === yr ? 'rgba(34,211,238,0.15)' : 'var(--surface)',
+                background: year === yr ? 'rgba(0,174,239,0.15)' : 'var(--surface)',
                 color: year === yr ? 'var(--accent)' : 'var(--muted)',
                 border: '1px solid var(--border)',
               }}

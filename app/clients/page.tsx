@@ -53,8 +53,8 @@ export default async function ClientsPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <form className="flex-1 min-w-48">
+      <div className="flex gap-3 items-center flex-wrap">
+        <form className="flex-1 min-w-52 max-w-md">
           <input
             type="search"
             name="q"
@@ -69,8 +69,8 @@ export default async function ClientsPage({ searchParams }: PageProps) {
             href={`/clients?${q ? `q=${q}&` : ''}${state ? `state=${state}` : ''}`}
             className="px-3 py-1.5 rounded-lg text-sm font-medium"
             style={{
-              background: !year ? 'rgba(167,139,250,0.15)' : 'var(--surface)',
-              color: !year ? 'var(--accent2)' : 'var(--muted)',
+              background: !year ? 'rgba(0,174,239,0.15)' : 'var(--surface)',
+              color: !year ? 'var(--accent)' : 'var(--muted)',
               border: '1px solid var(--border)',
             }}
           >
@@ -82,8 +82,8 @@ export default async function ClientsPage({ searchParams }: PageProps) {
               href={`/clients?year=${yr}${q ? `&q=${q}` : ''}`}
               className="px-3 py-1.5 rounded-lg text-sm font-medium"
               style={{
-                background: year === yr ? 'rgba(167,139,250,0.15)' : 'var(--surface)',
-                color: year === yr ? 'var(--accent2)' : 'var(--muted)',
+                background: year === yr ? 'rgba(0,174,239,0.15)' : 'var(--surface)',
+                color: year === yr ? 'var(--accent)' : 'var(--muted)',
                 border: '1px solid var(--border)',
               }}
             >
@@ -139,7 +139,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                   <Link
                     href={`/activity?client=${c.client_id}`}
                     className="text-xs px-2 py-1 rounded-md"
-                    style={{ background: 'rgba(34,211,238,0.1)', color: 'var(--accent)' }}
+                    style={{ background: 'rgba(0,174,239,0.1)', color: 'var(--accent)' }}
                   >
                     Activity →
                   </Link>
